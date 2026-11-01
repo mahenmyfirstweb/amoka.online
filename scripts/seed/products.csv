@@ -1,0 +1,46 @@
+image,name,brand,category,sizes,prices,stock,active,note
+aachi masala/image1.jpg,Aachi Sambar Powder,Aachi,aachi-masala,50g,5.00,25,yes,Placeholder price
+beverages/image1.jpg,Paper Boat Swing Zesty Pomegranate,Paper Boat,beverages,1 pack,5.00,25,yes,Placeholder price; confirm pack size
+beverages/image2.jpg,Bovonto,Bovonto,beverages,1 bottle,5.00,25,yes,Placeholder price; confirm bottle size
+beverages/image3.jpg,Paper Boat Swing Yummy Guava,Paper Boat,beverages,1 pack,5.00,25,yes,Placeholder price; confirm pack size
+beverages/image5.jpg,Thums Up,Thums Up,beverages,250 ml,5.00,25,yes,Placeholder price
+biscuits/image1.jpg,Amoka Osmania Biscuits,Amoka,biscuits,100g,5.00,25,yes,Placeholder price
+grocerys/image1.JPG,Amoka Country Sugar,Amoka,groceries,1 pack,5.00,25,yes,Placeholder price; confirm pack size
+grocerys/image3.jpeg,Amoka Rice Flakes Red Thick,Amoka,groceries,500g,5.00,25,yes,Placeholder price
+grocerys/image4.jpeg,Amoka Rice Flakes Thick,Amoka,groceries,500g,5.00,25,yes,Placeholder price
+grocerys/image5.jpeg,Amoka Fried Gram Dhall,Amoka,groceries,250g,5.00,25,yes,Placeholder price
+lays/image1.webp,Lay's American Style Cream & Onion,Lay's,lays-kurkure,1 pack,5.00,25,yes,Placeholder price; confirm pack size
+millets/image1.jpeg,Amoka Finger Millet,Amoka,millets,500g,5.00,25,yes,Placeholder price
+millets/image2.jpeg,Amoka Pearl Millet,Amoka,millets,500g,5.00,25,yes,Placeholder price
+millets/image3.jpeg,Amoka Horse Gram,Amoka,dhall,500g,5.00,25,yes,Placeholder price; moved from millets folder because it is a pulse
+oil/image2.jpg,Amoka Virgin Groundnut Oil,Amoka,oil,1 litre,5.00,25,yes,Placeholder price
+pickles/image2.jpeg,Amoka Lemon Pickle,Amoka,pickles,1 jar,5.00,25,yes,Placeholder price; confirm jar size
+pickles/image4.jpeg,Amoka Garlic Pickle,Amoka,pickles,1 jar,5.00,25,yes,Placeholder price; confirm jar size
+pickles/image5.jpeg,Amoka Mango Pickle,Amoka,pickles,1 jar,5.00,25,yes,Placeholder price; confirm jar size
+snacks/image7.jpg,Amoka Palm Jaggery Puffed Rice Laddu,Amoka,snacks,1 pack,5.00,25,yes,Placeholder price; confirm pack size; image is text only so replace with a photo
+spices/image1.jpeg,Amoka Dry Chilli Round,Amoka,spices,100g,5.00,25,yes,Placeholder price
+spices/image2.jpeg,Amoka Curd Chillies,Amoka,spices,100g + 50g extra,5.00,25,yes,Placeholder price
+spices/image3.jpeg,Amoka Dry Chilli Long,Amoka,spices,100g,5.00,25,yes,Placeholder price
+appalam/image1.jpeg,Amoka Mix Fryums,Amoka,appalam-vadagam,200g + 50g free,5.00,25,no,HIDDEN: image shows packed May 2022. Replace the photo then set active to yes
+salt/image1.jpeg,Amoka Crystal Salt,Amoka,groceries,1kg,5.00,25,no,HIDDEN: image shows expiry 30 June 2023. Replace the photo then set active to yes
+grocerys/image2.jpg,Amoka Jaggery Round,Amoka,groceries,1 pack,5.00,25,no,HIDDEN: image shows Exp 19/12/25. Replace the photo then set active to yes
+beverages/image4.PNG,Paper Boat Swing Slurpy Mango,Paper Boat,beverages,1 pack,5.00,25,no,HIDDEN: image is too small. Replace the photo then set active to yes
+beverages/image6.PNG,Paper Boat Swing Coconut Water,Paper Boat,beverages,1 pack,5.00,25,no,HIDDEN: image is too small. Replace the photo then set active to yes
+semiya/image1.png,Anil Lemon Vermicelli,Anil,semiya,200g,5.00,25,no,HIDDEN: image is too small. Replace the photo then set active to yes
+snacks/image4.jpeg,Amoka Mixer,Amoka,snacks,200g,5.00,25,no,HIDDEN: notebook and a foot are in the photo. Replace the photo then set active to yes
+chips/image3.jpeg,Amoka Manavalli Kilangu Chips,Amoka,chips,200g,5.00,25,no,HIDDEN: poor photo and the name and size are hard to read. Confirm them and replace the photo
+candy/imag1.jpg,Unnamed candy 1,Amoka,candy,100g,5.00,25,no,HIDDEN: no name on pack. Looks like peanut candy balls. Confirm the name and allergens
+candy/imag2.jpg,Unnamed candy 2,Amoka,candy,100g,5.00,25,no,HIDDEN: no name on pack. Pale crumbly pieces. Confirm the name and allergens
+candy/image3.jpg,Unnamed candy 3,Amoka,candy,100g,5.00,25,no,HIDDEN: no name on pack. Looks like sesame and peanut balls. Confirm the name and allergens
+chips/image1.jpeg,Unnamed chips 1,Amoka,chips,1 pack,5.00,25,no,HIDDEN: no name on pack. Looks like banana chips. Confirm the name and size
+chips/image2.jpeg,Unnamed chips 2,Amoka,chips,1 pack,5.00,25,no,HIDDEN: no name on pack. Ribbon-shaped fried snack. Confirm the name and size
+dhall/image2.jpeg,Unnamed dhall 1,Amoka,dhall,1 pack,5.00,25,no,HIDDEN: no name on pack. Looks like whole green gram. Confirm the name and size
+millets/image4.jpeg,Unnamed pulse 1,Amoka,dhall,1 pack,5.00,25,no,HIDDEN: no name on pack. Looks like cowpea. Confirm the name and size
+snacks/image1.jpg,Unnamed snack 1,Amoka,snacks,1 pack,5.00,25,no,HIDDEN: no name on pack. Looks like coiled murukku. Confirm the name and size
+snacks/image2.jpeg,Unnamed snack 2,Amoka,snacks,1 pack,5.00,25,no,HIDDEN: no name on pack. Looks like spiced boondi. Confirm the name and size
+snacks/image3.jpeg,Unnamed snack 3,Amoka,snacks,1 pack,5.00,25,no,HIDDEN: no name on pack. Looks like sev sticks. Confirm the name and size
+snacks/image5.jpeg,Unnamed snack 4,Amoka,snacks,1 pack,5.00,25,no,HIDDEN: no name on pack. Ridged fried sticks in a blue pack. Confirm the name and size
+snacks/image6.jpeg,Unnamed snack 5,Amoka,snacks,1 pack,5.00,25,no,HIDDEN: no name on pack. Ridged fried sticks in an orange pack. Confirm the name and size
+snacks/image8.png,Unnamed snack 6,Amoka,snacks,1 pack,5.00,25,no,HIDDEN: no name on pack. Looks like mixture with sev. Confirm the name and size
+spices/image4.jpeg,Unnamed spice 1,Amoka,spices,100g,5.00,25,no,HIDDEN: no name on pack. Looks like mustard seed with dal. Confirm the name
+spices/image5.jpeg,Unnamed spice 2,Amoka,spices,100g,5.00,25,no,HIDDEN: no name on pack. Looks like cumin with fenugreek. Confirm the name

@@ -1,26 +1,117 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Contrast rules: brown text on white or yellow. On orange use bark, never brown or
+   white. Orange is a fill, never a text colour. Beige borders are decorative: form
+   controls use brown. */
+@theme {
+  --color-paper: #fcfcfb;
+  --color-yellow: #fbc62f;
+  --color-orange: #e08140;
+  --color-beige: #d7b39d;
+  --color-beige-tint: #f8f1ec;
+  --color-brown: #813f30;
+  --color-bark: #3b1c15;
+
+  --font-sans: var(--font-inter), var(--font-tamil), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-poppins), var(--font-tamil), ui-sans-serif, system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  body {
+    background: var(--color-paper);
+    color: var(--color-brown);
+    font-family: var(--font-sans);
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    color: var(--color-brown);
+  }
+
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 3px solid var(--color-bark);
+    outline-offset: 2px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .btn {
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-weight: 600;
+    transition: background-color 150ms, color 150ms;
+  }
+
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  .btn-primary {
+    background: var(--color-yellow);
+    color: var(--color-brown);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--color-orange);
+    color: var(--color-bark);
+  }
+
+  .btn-outline {
+    border: 1px solid var(--color-brown);
+    background: white;
+    color: var(--color-brown);
+  }
+
+  .btn-outline:hover:not(:disabled) {
+    background: var(--color-beige-tint);
+  }
+
+  .input {
+    width: 100%;
+    min-height: 48px;
+    border: 1px solid var(--color-brown);
+    border-radius: 0.5rem;
+    background: white;
+    padding: 0.5rem 0.75rem;
+    color: var(--color-bark);
+  }
+
+  .card {
+    border: 1px solid var(--color-beige);
+    border-radius: 0.75rem;
+    background: white;
+  }
+
+  .badge {
+    display: inline-block;
+    border-radius: 9999px;
+    background: var(--color-orange);
+    padding: 0.125rem 0.625rem;
+    color: var(--color-bark);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white;
+  }
 }
