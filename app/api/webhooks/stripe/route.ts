@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { notifyAdminOfOrder } from "@/lib/notify";
 import { createStripe, recordPaidSession } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -33,10 +34,12 @@ export async function POST(request: Request) {
         // Delayed payment methods complete first and are paid later.
         if (event.data.object.payment_status === "paid") {
           await recordPaidSession(admin, event.data.object);
+          await notifyAdminOfOrder(event.data.object.metadata?.order_id);
         }
         break;
       case "checkout.session.async_payment_succeeded":
         await recordPaidSession(admin, event.data.object);
+        await notifyAdminOfOrder(event.data.object.metadata?.order_id);
         break;
       case "checkout.session.async_payment_failed":
       case "checkout.session.expired": {

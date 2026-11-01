@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ClearCart } from "@/components/store/clear-cart";
 import { OrderSummary } from "@/components/store/order-view";
 import { requireUser } from "@/lib/auth";
+import { notifyAdminOfOrder } from "@/lib/notify";
 import { getOrder } from "@/lib/orders";
 import { createStripe, recordPaidSession } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -48,6 +49,9 @@ export default async function ConfirmationPage({ params, searchParams }: Props) 
 
   const { order, items } = result;
   const paid = order.status !== "pending" && order.status !== "cancelled";
+
+  // A second chance if the webhook's email failed. Does nothing if it was already sent.
+  if (paid) await notifyAdminOfOrder(id);
 
   return (
     <>

@@ -11,7 +11,10 @@ const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
   createSession: vi.fn(),
   expireSession: vi.fn(),
+  notify: vi.fn(),
 }));
+
+vi.mock("@/lib/notify", () => ({ notifyAdminOfOrder: mocks.notify }));
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({ rpc: mocks.rpc, from: mocks.from }),
@@ -72,6 +75,7 @@ const paidSession = {
   payment_intent: "pi_1",
   amount_total: 1600,
   currency: "sgd",
+  metadata: { order_id: "order-1" },
 };
 
 beforeEach(() => {
@@ -93,6 +97,22 @@ describe("Stripe webhook", () => {
       p_currency: "sgd",
     }));
     expect(calls.upserts).toHaveLength(1);
+    expect(mocks.notify).toHaveBeenCalledWith("order-1");
+  });
+
+  it("emails the admin only after the payment is recorded", async () => {
+    tables();
+    mocks.rpc.mockResolvedValue({ data: null, error: { message: "database down" } });
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await webhook(signedRequest(event("checkout.session.completed", paidSession)));
+    expect(mocks.notify).not.toHaveBeenCalled();
+  });
+
+  it("doesn't email the admin about an unpaid or expired session", async () => {
+    tables();
+    await webhook(signedRequest(event("checkout.session.completed", { ...paidSession, payment_status: "unpaid" })));
+    await webhook(signedRequest(event("checkout.session.expired", paidSession)));
+    expect(mocks.notify).not.toHaveBeenCalled();
   });
 
   it("rejects a tampered body", async () => {

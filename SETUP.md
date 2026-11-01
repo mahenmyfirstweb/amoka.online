@@ -167,8 +167,13 @@ Open `.env.local` and replace each value:
 | `SUPABASE_SECRET_KEY` | Supabase: **Project Settings > API Keys**, secret key (older projects: `service_role` key). **Keep private** |
 | `STRIPE_SECRET_KEY` | Stripe: **Developers > API keys**. **Keep private** |
 | `STRIPE_WEBHOOK_SECRET` | Stripe: your webhook's signing secret, from step 3. **Keep private** |
+| `RESEND_API_KEY` | Resend: **API Keys > Create API Key**, with sending access. **Keep private** |
+| `EMAIL_FROM` | The sender of order emails, on the domain you verified in Resend. Leave it as `amoka.online <orders@amoka.online>` |
+| `ADMIN_ORDER_EMAIL` | The one address that receives new order emails, for example `order@starlucents.com` |
 
 On your PC you can leave `STRIPE_WEBHOOK_SECRET` as it is. Local test payments are confirmed when you return to the confirmation page.
+
+Order emails need a Resend account even if you chose Brevo for login emails. Without `RESEND_API_KEY` and `EMAIL_FROM`, the store still works but doesn't send them.
 
 Restart `npm run dev` after changing this file.
 
@@ -221,7 +226,7 @@ Also check label images for details that are out of date, such as the typo "QUER
 1. Sign up at [vercel.com](https://vercel.com) using **Continue with GitHub**.
 2. Click **Add New > Project** and import `amoka.online`.
 3. Leave the build settings as they are. Vercel detects Next.js.
-4. Open **Environment Variables** and add all six from step 4, with these changes:
+4. Open **Environment Variables** and add all nine from step 4, with these changes:
    - `NEXT_PUBLIC_SITE_URL` = `https://amoka.online`
    - `STRIPE_WEBHOOK_SECRET` = a temporary value for now. You'll replace it below.
 5. Click **Deploy**.
@@ -260,6 +265,7 @@ Then create the Stripe **test mode** webhook from step 3, put its `whsec_` secre
    - **Admin > Orders** shows it as **Paid**.
    - The product's stock went down.
    - Stripe's **Developers > Webhooks** page shows successful deliveries.
+   - One **New order** email reached your `ADMIN_ORDER_EMAIL` inbox, with the items and delivery address. Check your spam folder too.
 7. Try the other paths:
    - Choose PayNow and use the test screen.
    - Click back on the Stripe page: you should see "Payment cancelled".
@@ -320,7 +326,9 @@ Orders marked **Review** need your attention. For example, a customer may have p
 
 **Refunds:** do these in your Stripe dashboard. Cancelling an order returns the stock but does **not** refund the customer.
 
-The store doesn't send order emails. Stripe sends customers a receipt if you turn on **Settings > Customer emails > Successful payments**. Check **Admin > Orders** regularly for new orders.
+**Order emails:** you get one email for each paid order, listing the items, totals and delivery address, with a link to the order. Replying goes to the customer. If an order needs review, the subject says so. Treat **Admin > Orders** as your full record, because an email can occasionally fail or land in spam.
+
+Customers don't get an order email from the store. Stripe sends them a receipt if you turn on **Settings > Customer emails > Successful payments**.
 
 ---
 
@@ -330,6 +338,7 @@ The store doesn't send order emails. Stripe sends customers a receipt if you tur
 |---|---|
 | Site shows no products | Seed script not run, or the Supabase values are wrong |
 | Confirmation emails don't arrive | Custom SMTP isn't set up (step 2) |
+| No email for a paid order | Check spam, then `RESEND_API_KEY`, `EMAIL_FROM` and your verified domain in Resend. Vercel's logs show the reason. The order is safe in Admin > Orders |
 | Email link goes to the wrong page | Supabase Site URL or Redirect URLs are wrong |
 | "We couldn't start the payment" | `STRIPE_SECRET_KEY` is wrong, or test and live keys are mixed |
 | Paid, but the order stays "Awaiting payment" | Webhook address or `STRIPE_WEBHOOK_SECRET` is wrong. Check Stripe's webhook page |

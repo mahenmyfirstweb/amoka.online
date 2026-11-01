@@ -122,6 +122,7 @@ create table public.orders (
   stock_reserved boolean not null default true,
   needs_review boolean not null default false,
   review_note text,
+  admin_notified_at timestamptz,
   expires_at timestamptz,
   paid_at timestamptz,
   shipped_at timestamptz,
