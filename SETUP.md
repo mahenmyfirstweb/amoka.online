@@ -174,7 +174,7 @@ Restart `npm run dev` after changing this file.
 
 ### Store details
 
-Open `config/site.ts` and replace every value starting `REPLACE`: your UEN, SFA licence number, address, email, phone, support hours, delivery time and return window. These appear in the footer, policy pages and invoices. Your company name, AMOKA TRADING PTE LTD, is already filled in.
+Open `config/site.ts` and replace the support email, which still starts `REPLACE`. Your company name, UEN, SFA licence, address, phone, support hours, delivery time and return window are already filled in. These details appear in the footer, policy pages and invoices.
 
 ### GST
 
@@ -276,7 +276,7 @@ Then create the Stripe **test mode** webhook from step 3, put its `whsec_` secre
 - [ ] Hidden products are fixed or left hidden
 - [ ] Allergens and ingredients are filled in for food products
 - [ ] Policy pages are reviewed. They're drafts, so have them checked for your business
-- [ ] Your SFA licence number is in `config/site.ts`. It appears in the site footer. Check the licence covers everything you sell, including online sales and any food you import yourself, with the [Singapore Food Agency](https://www.sfa.gov.sg/food-import-export/commercial-imports)
+- [ ] Check your SFA licence covers everything you sell, including online sales and any food you import yourself, with the [Singapore Food Agency](https://www.sfa.gov.sg/food-import-export/commercial-imports)
 - [ ] Your GST treatment is confirmed with IRAS or your accountant
 - [ ] Supabase and Vercel are on paid plans
 
