@@ -4,7 +4,7 @@ import { SignOutButton } from "@/components/store/auth-forms";
 import { getIsAdmin, requireUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
-  title: "My account",
+  title: { default: "My account", template: "%s | amoka.online" },
   description: "Your orders, addresses and details.",
   robots: { index: false },
 };
