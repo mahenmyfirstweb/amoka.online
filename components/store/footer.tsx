@@ -33,6 +33,7 @@ export function Footer() {
           <address className="mt-2 space-y-1 text-sm not-italic">
             <p>{site.legalName}</p>
             <p>UEN: {site.uen}</p>
+            <p>SFA licence: {site.sfaLicence}</p>
             <p>{site.address}</p>
             <p>{site.email}</p>
             <p>{site.phone}</p>
