@@ -174,7 +174,7 @@ Restart `npm run dev` after changing this file.
 
 ### Store details
 
-Open `config/site.ts` and replace the support email, which still starts `REPLACE`. Your company name, UEN, SFA licence, address, phone, support hours, delivery time and return window are already filled in. These details appear in the footer, policy pages and invoices.
+Your company name, UEN, SFA licence, address, email, phone, support hours, delivery time and return window are already filled in. To change any of them, edit `config/site.ts`. These details appear in the footer, policy pages and invoices.
 
 ### GST
 
@@ -269,7 +269,7 @@ Then create the Stripe **test mode** webhook from step 3, put its `whsec_` secre
 
 ### Before going live
 
-- [ ] Every `REPLACE` value in `config/site.ts` is filled in
+- [ ] The details in `config/site.ts` are correct
 - [ ] All S$5.00 placeholder prices are replaced
 - [ ] Shipping fee and free shipping amount are set
 - [ ] GST registration number is entered
