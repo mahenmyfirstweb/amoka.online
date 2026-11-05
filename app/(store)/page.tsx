@@ -4,7 +4,7 @@ import { CategoryVisual } from "@/components/store/category-visual";
 import { HeroCarousel, type Slide, type SlideProduct } from "@/components/store/hero-carousel";
 import { bestSaving, ProductGrid } from "@/components/store/product-card";
 import { site } from "@/config/site";
-import { getCategories, getStoreSettings, listProducts } from "@/lib/catalog";
+import { getBanners, getCategories, getStoreSettings, listProducts } from "@/lib/catalog";
 import { formatPrice, percentOff } from "@/lib/format";
 import type { ProductCardData } from "@/lib/types";
 
@@ -50,11 +50,12 @@ function forSlide(products: ProductCardData[]): SlideProduct[] {
 }
 
 export default async function HomePage() {
-  const [categories, settings, featured, catalogue] = await Promise.all([
+  const [categories, settings, featured, catalogue, banners] = await Promise.all([
     getCategories(),
     getStoreSettings(),
     listProducts({ featured: true, limit: 8 }),
     listProducts({ sort: "newest", limit: 100 }),
+    getBanners(),
   ]);
   const all = catalogue.products;
   const products = featured.products.length > 0 ? featured.products : all.slice(0, 8);
@@ -67,7 +68,19 @@ export default async function HomePage() {
   const bestOffer = offers.length > 0 ? bestSaving(offers[0]) : null;
   const freeFrom = settings?.free_shipping_threshold_cents;
 
-  const slides: Slide[] = [
+  // Slides added in Admin > Home slides replace the automatic ones below.
+  const adminSlides: Slide[] = banners.map((b) => ({
+    id: b.id,
+    tone: "bark",
+    eyebrow: b.eyebrow ?? "",
+    title: b.title,
+    text: b.body ?? "",
+    cta: b.button_label && b.button_link ? { href: b.button_link, label: b.button_label } : undefined,
+    image_path: b.image_path,
+    products: [],
+  }));
+
+  const automaticSlides: Slide[] = [
     {
       id: "welcome",
       tone: "bark",
@@ -112,6 +125,7 @@ export default async function HomePage() {
         }]
       : []),
   ];
+  const slides = adminSlides.length > 0 ? adminSlides : automaticSlides;
 
   const promises = [
     { icon: Truck, title: "Delivered across Singapore", text: `In ${site.deliveryTime}` },

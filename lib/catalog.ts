@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { isSupabaseConfigured } from "./supabase/config";
 import { createClient } from "./supabase/server";
-import type { Category, ProductCardData, ProductDetail } from "./types";
+import type { Banner, Category, ProductCardData, ProductDetail } from "./types";
 
 export const PAGE_SIZE = 24;
 
@@ -34,6 +34,23 @@ export const getCategories = cache(async (): Promise<Category[]> => {
     .order("sort_order");
   if (error) throw new Error(error.message);
   return data;
+});
+
+/** Live home page slides. Empty, not an error, if supabase/09_banners.sql hasn't been run yet. */
+export const getBanners = cache(async (): Promise<Banner[]> => {
+  if (!isSupabaseConfigured) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("banners")
+    .select("*")
+    .order("sort_order")
+    .order("created_at")
+    .limit(10);
+  if (error) {
+    console.warn("Home page slides unavailable:", error.message);
+    return [];
+  }
+  return data as Banner[];
 });
 
 export type StoreSettings = {

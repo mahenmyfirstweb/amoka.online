@@ -102,6 +102,35 @@ export const categorySchema = z.object({
   is_active: z.boolean(),
 });
 
+const dateString = z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a valid date")]);
+
+/** A home page slide. Dates are Singapore days: it shows from the start of the first to the end of the last. */
+export const bannerSchema = z
+  .object({
+    eyebrow: optional(40),
+    title: trimmed(120),
+    body: optional(240),
+    image_path: z.union([z.literal(""), z.string().regex(/^banners\/[\w-]+\/[0-9a-f-]{36}\.(jpe?g|png|webp)$/)]),
+    button_label: optional(30),
+    button_link: z
+      .string()
+      .trim()
+      .max(300)
+      .refine((v) => v === "" || /^(\/[^/]|\/$|https:\/\/)/.test(v), "Links must start with / (a page in the shop) or https://"),
+    sort_order: z.coerce.number().int().min(0).max(100000),
+    is_active: z.boolean(),
+    starts_on: dateString,
+    ends_on: dateString,
+  })
+  .refine((b) => !b.starts_on || !b.ends_on || b.ends_on >= b.starts_on, {
+    message: "The end date can't be before the start date",
+    path: ["ends_on"],
+  })
+  .refine((b) => !b.button_label === !b.button_link, {
+    message: "Give the button both a label and a link, or leave both empty",
+    path: ["button_link"],
+  });
+
 export const settingsSchema = z.object({
   shipping_fee: dollars,
   free_shipping_threshold: dollars,

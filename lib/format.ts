@@ -16,6 +16,17 @@ export function formatDate(value: string): string {
   });
 }
 
+export function formatDateTime(value: string): string {
+  return new Date(value).toLocaleString("en-SG", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "Asia/Singapore",
+  });
+}
+
 export function formatRate(rateBp: number): string {
   return `${rateBp / 100}%`;
 }

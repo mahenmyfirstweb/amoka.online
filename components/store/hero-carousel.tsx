@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Pause, Play, Truck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { formatPrice } from "@/lib/format";
+import { imageUrl } from "@/lib/supabase/config";
 import { ProductImage } from "./product-image";
 
 export type SlideProduct = {
@@ -21,8 +23,10 @@ export type Slide = {
   eyebrow: string;
   title: string;
   text: string;
-  cta: { href: string; label: string };
+  cta?: { href: string; label: string };
   secondary?: { href: string; label: string };
+  /** A photo uploaded in Admin > Home slides, shown full width behind the text. */
+  image_path?: string | null;
   products: SlideProduct[];
 };
 
@@ -34,6 +38,29 @@ const TONES = {
   brown: { box: "bg-brown", eyebrow: "text-yellow", title: "text-white", text: "text-beige-tint", cta: "btn-primary", secondary: "border border-beige-tint text-white hover:bg-white/10" },
   gold: { box: "bg-yellow", eyebrow: "text-bark", title: "text-bark", text: "text-bark", cta: "bg-bark text-white hover:bg-brown", secondary: "border border-bark text-bark hover:bg-white/30" },
 } as const;
+
+function ProductTiles({ products, eager }: { products: SlideProduct[]; eager: boolean }) {
+  return (
+    <ul className="hidden grid-cols-3 gap-3 md:grid">
+      {products.slice(0, 3).map((p, n) => (
+        <li key={p.id} className={n === 1 ? "-translate-y-3" : "translate-y-3"}>
+          <Link href={`/p/${p.slug}`} className="block overflow-hidden rounded-2xl bg-white p-1.5 shadow-xl transition motion-safe:hover:-translate-y-1">
+            <ProductImage path={p.image_path} alt="" sizes="160px" priority={eager && n === 0} />
+            <span className="block px-1 pt-1 pb-0.5 text-xs font-semibold text-bark">
+              <span className="line-clamp-1">{p.name}</span>
+              <span className="flex items-center gap-1.5">
+                {formatPrice(p.price_cents)}
+                {p.mrp_cents && p.mrp_cents > p.price_cents && (
+                  <span className="font-normal line-through"><span className="sr-only">was </span>{formatPrice(p.mrp_cents)}</span>
+                )}
+              </span>
+            </span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 /** Rotating promotions at the top of the home page. Pauses on hover, focus or request. */
 export function HeroCarousel({ slides }: { slides: Slide[] }) {
@@ -57,7 +84,7 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
 
   if (slides.length === 0) return null;
   const go = (step: number) => setIndex((i) => (i + step + slides.length) % slides.length);
-  const control = "flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-brown shadow-md hover:bg-white";
+  const arrow = "absolute top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-brown shadow-md hover:bg-white md:flex";
 
   return (
     <section
@@ -71,8 +98,10 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
     >
       <div className="grid">
         {slides.map((slide, i) => {
-          const tone = TONES[slide.tone];
+          const photo = imageUrl(slide.image_path);
+          const tone = photo ? TONES.bark : TONES[slide.tone];
           const active = i === index;
+          const Heading = i === 0 ? "h1" : "h2";
           return (
             <div
               key={slide.id}
@@ -81,54 +110,34 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
               aria-label={`${i + 1} of ${slides.length}: ${slide.title}`}
               aria-hidden={!active}
               inert={!active}
-              className={`relative flex items-center [grid-area:1/1] overflow-hidden px-6 pt-10 pb-24 transition-opacity duration-700 sm:px-12 sm:pt-14 sm:pb-24 ${tone.box} ${
+              className={`relative flex min-h-[260px] items-center [grid-area:1/1] overflow-hidden px-6 pt-8 pb-14 transition-opacity duration-700 sm:min-h-[300px] sm:px-10 md:px-16 lg:min-h-[340px] ${tone.box} ${
                 active ? "opacity-100" : "invisible opacity-0"
               }`}
             >
-              <div aria-hidden="true" className="pointer-events-none absolute -top-32 -right-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
-              <div className="relative grid w-full items-center gap-8 lg:grid-cols-2">
-                <div>
-                  <span className={`eyebrow ${tone.eyebrow}`}>{slide.eyebrow}</span>
-                  {i === 0 ? (
-                    <h1 className={`mt-4 max-w-xl text-4xl leading-tight font-bold sm:text-5xl ${tone.title}`}>{slide.title}</h1>
-                  ) : (
-                    <h2 className={`mt-4 max-w-xl text-4xl leading-tight font-bold sm:text-5xl ${tone.title}`}>{slide.title}</h2>
-                  )}
-                  <p className={`mt-4 max-w-md text-lg ${tone.text}`}>{slide.text}</p>
-                  <div className="mt-8 flex flex-wrap gap-3">
-                    <Link href={slide.cta.href} className={`btn px-7 ${tone.cta}`}>{slide.cta.label}</Link>
-                    {slide.secondary && (
-                      <Link href={slide.secondary.href} className={`btn px-7 ${tone.secondary}`}>{slide.secondary.label}</Link>
-                    )}
-                  </div>
-                </div>
+              {photo ? (
+                <>
+                  <Image src={photo} alt="" fill sizes="(min-width: 1152px) 1152px, 100vw" preload={i === 0} className="object-cover" />
+                  <div aria-hidden="true" className="absolute inset-0 bg-linear-to-r from-bark via-bark/80 to-bark/10" />
+                </>
+              ) : (
+                <div aria-hidden="true" className="pointer-events-none absolute -top-24 -right-16 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
+              )}
 
-                {slide.products.length > 0 ? (
-                  <ul className="grid grid-cols-2 gap-3 sm:gap-4">
-                    {slide.products.slice(0, 4).map((p, n) => (
-                      <li key={p.id} className={`${n >= 2 ? "hidden sm:block" : ""} ${n % 2 === 1 ? "lg:translate-y-6" : ""}`}>
-                        <Link href={`/p/${p.slug}`} className="block overflow-hidden rounded-2xl bg-white p-2 shadow-xl transition motion-safe:hover:-translate-y-1">
-                          <ProductImage path={p.image_path} alt="" sizes="(min-width: 1024px) 240px, 45vw" priority={i === 0 && n < 2} />
-                          <span className="block px-1 pt-1 text-xs font-semibold text-bark sm:text-sm">
-                            <span className="line-clamp-1">{p.name}</span>
-                            <span className="mt-0.5 flex items-center gap-1.5">
-                              {formatPrice(p.price_cents)}
-                              {p.mrp_cents && p.mrp_cents > p.price_cents && (
-                                <span className="font-normal line-through"><span className="sr-only">was </span>{formatPrice(p.mrp_cents)}</span>
-                              )}
-                            </span>
-                          </span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <div aria-hidden="true" className="hidden justify-center lg:flex">
-                    <span className="flex h-56 w-56 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/30">
-                      <Truck size={96} strokeWidth={1.25} className="text-yellow" />
-                    </span>
-                  </div>
-                )}
+              <div className={`relative grid w-full items-center gap-8 ${!photo && slide.products.length > 0 ? "md:grid-cols-[1.2fr_1fr]" : ""}`}>
+                <div className="max-w-xl">
+                  <span className={`eyebrow ${tone.eyebrow}`}>{slide.eyebrow}</span>
+                  <Heading className={`mt-3 text-3xl leading-tight font-bold sm:text-4xl ${tone.title}`}>{slide.title}</Heading>
+                  {slide.text && <p className={`mt-3 max-w-md sm:text-lg ${tone.text}`}>{slide.text}</p>}
+                  {(slide.cta || slide.secondary) && (
+                    <div className="mt-6 flex flex-wrap gap-3">
+                      {slide.cta && <Link href={slide.cta.href} className={`btn px-6 ${tone.cta}`}>{slide.cta.label}</Link>}
+                      {slide.secondary && (
+                        <Link href={slide.secondary.href} className={`btn hidden px-6 sm:inline-flex ${tone.secondary}`}>{slide.secondary.label}</Link>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {!photo && slide.products.length > 0 && <ProductTiles products={slide.products} eager={i === 0} />}
               </div>
             </div>
           );
@@ -136,37 +145,39 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
       </div>
 
       {slides.length > 1 && (
-        <div className="absolute inset-x-0 bottom-5 flex items-center justify-center gap-3 px-4">
-          <button type="button" aria-label="Previous slide" onClick={() => go(-1)} className={control}>
+        <>
+          <button type="button" aria-label="Previous slide" onClick={() => go(-1)} className={`${arrow} left-3`}>
             <ChevronLeft aria-hidden="true" size={20} />
           </button>
-          <ol className="flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 shadow-md">
-            {slides.map((slide, i) => (
-              <li key={slide.id}>
-                <button
-                  type="button"
-                  aria-label={`Show slide ${i + 1}: ${slide.title}`}
-                  aria-current={i === index ? "true" : undefined}
-                  onClick={() => setIndex(i)}
-                  className="flex h-8 w-8 items-center justify-center"
-                >
-                  <span className={`block h-2.5 rounded-full transition-all ${i === index ? "w-6 bg-brown" : "w-2.5 bg-white ring-1 ring-brown"}`} />
-                </button>
-              </li>
-            ))}
-          </ol>
-          <button type="button" aria-label="Next slide" onClick={() => go(1)} className={control}>
+          <button type="button" aria-label="Next slide" onClick={() => go(1)} className={`${arrow} right-3`}>
             <ChevronRight aria-hidden="true" size={20} />
           </button>
-          <button
-            type="button"
-            aria-label={playing ? "Pause slideshow" : "Play slideshow"}
-            onClick={() => setPlaying(!playing)}
-            className={control}
-          >
-            {playing ? <Pause aria-hidden="true" size={18} /> : <Play aria-hidden="true" size={18} />}
-          </button>
-        </div>
+          <div className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-2">
+            <ol className="flex items-center rounded-full bg-white/90 px-1.5 shadow-md">
+              {slides.map((slide, i) => (
+                <li key={slide.id}>
+                  <button
+                    type="button"
+                    aria-label={`Show slide ${i + 1}: ${slide.title}`}
+                    aria-current={i === index ? "true" : undefined}
+                    onClick={() => setIndex(i)}
+                    className="flex h-8 w-7 items-center justify-center"
+                  >
+                    <span className={`block h-2 rounded-full transition-all ${i === index ? "w-5 bg-brown" : "w-2 bg-white ring-1 ring-brown"}`} />
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <button
+              type="button"
+              aria-label={playing ? "Pause slideshow" : "Play slideshow"}
+              onClick={() => setPlaying(!playing)}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-brown shadow-md hover:bg-white"
+            >
+              {playing ? <Pause aria-hidden="true" size={14} /> : <Play aria-hidden="true" size={14} />}
+            </button>
+          </div>
+        </>
       )}
     </section>
   );

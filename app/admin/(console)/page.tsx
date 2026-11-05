@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getStoreSettings } from "@/lib/catalog";
 import { formatPrice } from "@/lib/format";
+import { reportRange } from "@/lib/report";
 import { createClient } from "@/lib/supabase/server";
 
 function daysAgo(days: number) {
@@ -13,7 +14,11 @@ export default async function AdminDashboard() {
   const threshold = settings?.low_stock_threshold ?? 5;
   const monthAgo = daysAgo(30);
 
-  const [toShip, payLater, review, lowStock, recent] = await Promise.all([
+  const today = reportRange("today");
+  const [todayOrders, toShip, payLater, review, lowStock, recent] = await Promise.all([
+    supabase.from("orders").select("id", { count: "exact", head: true })
+      .gte("created_at", today.start.toISOString())
+      .not("status", "eq", "cancelled"),
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "paid"),
     supabase.from("orders").select("id", { count: "exact", head: true })
       .eq("status", "pending").eq("payment_method", "pay_later"),
@@ -25,6 +30,7 @@ export default async function AdminDashboard() {
   const revenue = (recent.data ?? []).reduce((sum, o) => sum + o.total_cents, 0);
 
   const tiles = [
+    { label: "Orders today", value: String(todayOrders.count ?? 0), href: "/admin/reports?range=today" },
     { label: "Orders to ship", value: String(toShip.count ?? 0), href: "/admin/orders?status=paid" },
     {
       label: "Pay-later orders awaiting payment",
@@ -39,7 +45,7 @@ export default async function AdminDashboard() {
   return (
     <>
       <h1 className="mb-4 text-2xl">Dashboard</h1>
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {tiles.map((t) => (
           <li key={t.label}>
             <Link href={t.href} className="card block h-full p-4 hover:bg-beige-tint">

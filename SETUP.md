@@ -61,7 +61,7 @@ Keep going: the store fills in once Supabase is connected.
 
 ### Run the SQL files
 
-The `supabase/` folder holds 8 files. Run them **in this exact order**, once each:
+The `supabase/` folder holds 9 files. Run them **in this exact order**, once each:
 
 | Order | File | What it does |
 |---|---|---|
@@ -73,6 +73,7 @@ The `supabase/` folder holds 8 files. Run them **in this exact order**, once eac
 | 6 | `06_checkout_functions.sql` | Checkout, payment and stock logic |
 | 7 | `07_seed.sql` | Your 20 categories and default settings |
 | 8 | `08_guest_checkout_pay_later.sql` | Guest checkout and "pay later" orders |
+| 9 | `09_banners.sql` | Home page slides you manage in admin |
 
 If you ran files 1 to 7 before file 8 existed, just run file 8 once. It's safe on a store that already has orders.
 
@@ -335,11 +336,25 @@ Then create the Stripe **test mode** webhook from step 3, put its `whsec_` secre
 - **Delete a product:** open it and click **Delete product**. Products with past orders are archived instead, so your records stay correct.
 - **Feature on the home page:** tick **Feature on the home page**.
 
+### Home page slides
+
+1. Go to **Admin > Home slides > Add new slide**.
+2. Upload a wide photo (at least 1600 × 600 pixels). Keep the important part on the right, because the left is darkened behind the text.
+3. Write the title, for example "20% off all pickles", and optionally a small heading, text and a button with a link such as `/c/pickles`.
+4. Optionally choose **Show from** and **Show until** dates, so an offer starts and ends by itself.
+5. Click **Save slide**.
+
+When you have at least one live slide, the home page shows your slides only. With none, it shows automatic slides built from your products.
+
 ### Handle orders
 
-1. Go to **Admin > Orders**. **Paid** orders need shipping.
-2. Open an order to see the items and address.
-3. After posting it, change the status to **Shipped**, then **Delivered** once it arrives.
+1. Go to **Admin > Orders**. Every order is listed, from guests and account holders, with its number, date, customer, items, payment, status and total. Search by customer name, email or order number.
+2. Open an order to see everything about it. **Print order** gives a packing sheet with tick boxes; **Invoice** gives the customer's invoice (a tax invoice once paid) to print or save as PDF.
+3. **Paid** orders need shipping. After posting one, change the status to **Shipped**, then **Delivered** once it arrives.
+
+### Sales report
+
+**Admin > Reports** shows orders and sales for **Today**, **This week** (from Monday), **This month**, or any dates you choose with **Apply dates**. It lists the number of orders and customers, paid sales, average order, pay-later orders still to collect, cancellations, a day-by-day table, best sellers and every order in the period. Search by customer name to see one customer's orders, and use **Print report** to print or save it as PDF. Times are Singapore time.
 
 **Pay-later orders** are marked **Pay later** and show as **Awaiting payment**. The dashboard counts them. For each one:
 

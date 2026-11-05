@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FileText, Printer } from "lucide-react";
 import { clearOrderReview } from "@/app/admin/actions";
 import { OrderStatusForm } from "@/components/admin/order-status-form";
 import { OrderSummary, StatusBadge } from "@/components/store/order-view";
-import { formatDate } from "@/lib/format";
+import { formatDateTime } from "@/lib/format";
 import { getOrder } from "@/lib/orders";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,14 +26,23 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   return (
     <>
       <Link href="/admin/orders" className="text-sm underline underline-offset-2">Back to orders</Link>
-      <div className="mt-2 mb-1 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl">{order.order_number}</h1>
-        <StatusBadge status={order.status} />
+      <div className="mt-2 mb-1 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-3xl">{order.order_number}</h1>
+          <StatusBadge status={order.status} />
+          {order.payment_method === "pay_later" && <span className="badge">Pay later</span>}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/admin/orders/${order.id}/print`} className="btn btn-outline"><Printer aria-hidden="true" size={18} /> Print order</Link>
+          <Link href={`/admin/orders/${order.id}/invoice`} className="btn btn-primary"><FileText aria-hidden="true" size={18} /> Invoice</Link>
+        </div>
       </div>
-      <p className="mb-4 text-sm">
-        {formatDate(order.created_at)}, {order.email} ({order.user_id ? "account" : "guest"}),{" "}
-        {order.shipping_address.phone}
-      </p>
+      <dl className="mb-4 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2 lg:grid-cols-4">
+        <div><dt className="inline font-semibold">Placed: </dt><dd className="inline">{formatDateTime(order.created_at)}</dd></div>
+        <div><dt className="inline font-semibold">Customer: </dt><dd className="inline">{order.shipping_address.recipient_name} ({order.user_id ? "account" : "guest"})</dd></div>
+        <div><dt className="inline font-semibold">Email: </dt><dd className="inline break-all">{order.email}</dd></div>
+        <div><dt className="inline font-semibold">Phone: </dt><dd className="inline">{order.shipping_address.phone}</dd></div>
+      </dl>
 
       {order.payment_method === "pay_later" && order.status === "pending" && (
         <div role="note" className="mb-4 rounded-xl bg-yellow p-4 text-brown">

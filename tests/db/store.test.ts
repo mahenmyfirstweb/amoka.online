@@ -632,6 +632,39 @@ describe("cart", () => {
   });
 });
 
+describe("home page slides", () => {
+  const insert = (title: string, extra = "") =>
+    db.query(`insert into public.banners (title${extra ? `, ${extra.split("=")[0]}` : ""}) values ($1${extra ? `, ${extra.split("=")[1]}` : ""})`, [title]);
+
+  it("shows shoppers only live slides, and admins all of them", async () => {
+    await insert("Live slide");
+    await insert("Switched off", "is_active=false");
+    await insert("Not started", "starts_at=now() + interval '1 day'");
+    await insert("Finished", "ends_at=now() - interval '1 minute'");
+
+    const shopper = await as<{ title: string }>(db, "anon", null, "select title from public.banners order by title");
+    expect(shopper.rows.map((r) => r.title)).toEqual(["Live slide"]);
+    const staff = await as<{ title: string }>(db, "authenticated", admin, "select title from public.banners");
+    expect(staff.rows).toHaveLength(4);
+  });
+
+  it("lets only admins add or change slides", async () => {
+    await expect(as(db, "authenticated", alice, "insert into public.banners (title) values ('Hacked')"))
+      .rejects.toThrow(/row-level security/);
+    await expect(as(db, "anon", null, "insert into public.banners (title) values ('Hacked')"))
+      .rejects.toThrow(/permission denied/);
+    const { rows } = await as(db, "authenticated", admin, "insert into public.banners (title) values ('By admin') returning id");
+    expect(rows).toHaveLength(1);
+  });
+
+  it("refuses links to other sites unless they're secure", async () => {
+    await expect(insert("Bad link", "button_link='http://example.com'")).rejects.toThrow(/check constraint/);
+    await expect(insert("Bad link", "button_link='//evil.example'")).rejects.toThrow(/check constraint/);
+    await insert("Shop link", "button_link='/c/snacks'");
+    await insert("Secure link", "button_link='https://example.com'");
+  });
+});
+
 describe("list_products", () => {
   type Row = { name: string; min_price_cents: number; total_count: number };
   const list = async (args: string) =>

@@ -10,6 +10,20 @@ export type Category = {
   is_active: boolean;
 };
 
+export type Banner = {
+  id: string;
+  eyebrow: string | null;
+  title: string;
+  body: string | null;
+  image_path: string | null;
+  button_label: string | null;
+  button_link: string | null;
+  sort_order: number;
+  is_active: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+};
+
 export type Variant = {
   id: string;
   label: string;

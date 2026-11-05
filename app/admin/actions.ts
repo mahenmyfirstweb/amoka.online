@@ -7,7 +7,7 @@ import { requireAdmin } from "@/lib/auth";
 import { slugify } from "@/lib/format";
 import { IMAGE_BUCKET } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
-import { categorySchema, dollars, orderStatusSchema, productSchema, settingsSchema } from "@/lib/validation";
+import { bannerSchema, categorySchema, dollars, orderStatusSchema, productSchema, settingsSchema } from "@/lib/validation";
 
 // Every action checks the admin role, then writes through the signed-in user's client,
 // so RLS and the order status rules apply as a second layer.
@@ -205,6 +205,63 @@ export async function deleteCategory(_: ActionState, form: FormData): Promise<Ac
   }
   refreshStore();
   return { saved: true };
+}
+
+/** Start of a Singapore day, as a timestamp. */
+const sgDayStart = (date: string) => new Date(`${date}T00:00:00+08:00`);
+
+export async function saveBanner(_: ActionState, form: FormData): Promise<ActionState> {
+  await requireAdmin();
+  const id = form.get("id") ? String(form.get("id")) : null;
+  const parsed = bannerSchema.safeParse({
+    eyebrow: form.get("eyebrow") ?? "",
+    title: form.get("title") ?? "",
+    body: form.get("body") ?? "",
+    image_path: form.get("image_path") ?? "",
+    button_label: form.get("button_label") ?? "",
+    button_link: form.get("button_link") ?? "",
+    sort_order: form.get("sort_order") ?? 0,
+    is_active: form.get("is_active") === "on",
+    starts_on: form.get("starts_on") ?? "",
+    ends_on: form.get("ends_on") ?? "",
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
+
+  const { starts_on, ends_on, image_path, button_link, ...rest } = parsed.data;
+  const row = {
+    ...rest,
+    image_path: image_path || null,
+    button_link: button_link || null,
+    starts_at: starts_on ? sgDayStart(starts_on).toISOString() : null,
+    // Shown through the whole of the end day.
+    ends_at: ends_on ? new Date(sgDayStart(ends_on).getTime() + 24 * 60 * 60 * 1000).toISOString() : null,
+  };
+
+  const supabase = await createClient();
+  const { error } = id
+    ? await supabase.from("banners").update(row).eq("id", id)
+    : await supabase.from("banners").insert(row);
+  if (error) {
+    return {
+      error: error.message.includes("banners")
+        ? "Home slides aren't set up yet. Run supabase/09_banners.sql in Supabase first."
+        : "We couldn't save this slide. Please try again.",
+    };
+  }
+
+  refreshStore();
+  revalidatePath("/admin/banners");
+  if (!id) redirect(`/admin/banners?created=${encodeURIComponent(row.title)}`);
+  return { saved: true };
+}
+
+export async function deleteBanner(form: FormData) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data } = await supabase.from("banners").delete().eq("id", String(form.get("id"))).select("image_path").maybeSingle();
+  if (data?.image_path) await supabase.storage.from(IMAGE_BUCKET).remove([data.image_path]);
+  refreshStore();
+  redirect("/admin/banners");
 }
 
 export async function updateOrderStatus(_: ActionState, form: FormData): Promise<ActionState> {

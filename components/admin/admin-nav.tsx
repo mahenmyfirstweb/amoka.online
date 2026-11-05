@@ -2,15 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FolderPlus, LayoutDashboard, Package, PackagePlus, Receipt, Settings, Tags } from "lucide-react";
+import {
+  ChartColumn, FolderPlus, GalleryHorizontalEnd, LayoutDashboard, Package, PackagePlus, Receipt, Settings, Tags,
+} from "lucide-react";
 
 const LINKS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/orders", label: "Orders", icon: Receipt },
+  { href: "/admin/reports", label: "Reports", icon: ChartColumn },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/products/new", label: "Add product", icon: PackagePlus },
   { href: "/admin/categories", label: "Categories", icon: Tags },
   { href: "/admin/categories/new", label: "Add category", icon: FolderPlus },
+  { href: "/admin/banners", label: "Home slides", icon: GalleryHorizontalEnd },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
