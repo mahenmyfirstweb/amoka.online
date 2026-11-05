@@ -1,4 +1,4 @@
-import type { OrderStatus } from "./validation";
+import type { OrderStatus, PaymentMethod } from "./validation";
 
 export type Category = {
   id: string;
@@ -97,8 +97,11 @@ export type OrderItem = {
 export type Order = {
   id: string;
   order_number: string;
+  user_id: string | null;
   email: string;
   status: OrderStatus;
+  payment_method: PaymentMethod;
+  access_token: string;
   subtotal_cents: number;
   shipping_cents: number;
   total_cents: number;

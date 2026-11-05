@@ -26,13 +26,16 @@ vi.mock("@/lib/supabase/admin", () => ({
   }),
 }));
 
-const { buildOrderEmail, notifyAdminOfOrder } = await import("@/lib/notify");
+const { buildCustomerEmail, buildOrderEmail, sendOrderEmails } = await import("@/lib/notify");
 
 const order = {
   id: "order-1",
   order_number: "AM-10001",
+  user_id: "user-1",
   email: "customer@example.com",
   status: "paid",
+  payment_method: "online",
+  access_token: "4a7b1e2c-8d3f-4c6a-9b1e-2f3a4b5c6d7e",
   subtotal_cents: 1000,
   shipping_cents: 600,
   total_cents: 1600,
@@ -90,9 +93,32 @@ describe("buildOrderEmail", () => {
     expect(subject).toBe("Review needed: order AM-10001");
     expect(text).toContain("REVIEW NEEDED: Stock ran out.");
   });
+
+  it("makes clear a pay-later order hasn't been paid, and who placed it", () => {
+    const { subject, text } = buildOrderEmail({ ...order, payment_method: "pay_later", status: "pending", paid_at: null, user_id: null }, items);
+    expect(subject).toBe("New pay-later order AM-10001: S$16.00");
+    expect(text).toContain("PAY LATER, not paid yet");
+    expect(text).toContain("customer@example.com (guest)");
+  });
 });
 
-describe("notifyAdminOfOrder", () => {
+describe("buildCustomerEmail", () => {
+  it("gives the customer their order and a link to view it", () => {
+    const { subject, text } = buildCustomerEmail(order, items);
+    expect(subject).toBe("Your amoka.online order AM-10001");
+    expect(text).toContain("payment has been received");
+    expect(text).toContain("2 x Toor Dhall (500g): S$10.00");
+    expect(text).toContain(`/orders/order-1/confirmation?token=${order.access_token}`);
+  });
+
+  it("tells pay-later customers they'll be contacted about payment", () => {
+    const { text } = buildCustomerEmail({ ...order, payment_method: "pay_later" }, items);
+    expect(text).toContain("You chose to pay later: we'll contact you to arrange payment");
+    expect(text).not.toContain("payment has been received");
+  });
+});
+
+describe("sendOrderEmails", () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
@@ -110,42 +136,58 @@ describe("notifyAdminOfOrder", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  it("sends to the admin address once the order is claimed", async () => {
-    await notifyAdminOfOrder("order-1");
-    expect(fetchMock).toHaveBeenCalledOnce();
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("https://api.resend.com/emails");
-    expect(init.headers["Idempotency-Key"]).toBe("order-order-1");
-    expect(JSON.parse(init.body)).toMatchObject({ to: "owner@example.com", reply_to: "customer@example.com" });
+  const sent = () => fetchMock.mock.calls.map(([, init]) => ({ headers: init.headers, body: JSON.parse(init.body) }));
+
+  it("emails the admin and the customer once each claim succeeds", async () => {
+    await sendOrderEmails("order-1");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.resend.com/emails");
+
+    const [toAdmin, toCustomer] = sent();
+    expect(toAdmin.headers["Idempotency-Key"]).toBe("order-order-1");
+    expect(toAdmin.body).toMatchObject({ to: "owner@example.com", reply_to: "customer@example.com" });
+    expect(toCustomer.headers["Idempotency-Key"]).toBe("customer-order-order-1");
+    expect(toCustomer.body).toMatchObject({ to: "customer@example.com", reply_to: "order@starlucents.com" });
+  });
+
+  it("claims each email separately", async () => {
+    await sendOrderEmails("order-1");
+    expect(mocks.updates.map((row) => Object.keys(row as object)[0])).toEqual([
+      "admin_notified_at",
+      "customer_notified_at",
+    ]);
   });
 
   it("sends nothing if another request already claimed the order", async () => {
     mocks.claim.mockResolvedValue({ data: null });
-    await notifyAdminOfOrder("order-1");
+    await sendOrderEmails("order-1");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("does nothing, without error, when email isn't set up", async () => {
     delete process.env.RESEND_API_KEY;
-    await expect(notifyAdminOfOrder("order-1")).resolves.toBeUndefined();
+    await expect(sendOrderEmails("order-1")).resolves.toBeUndefined();
     expect(mocks.claim).not.toHaveBeenCalled();
   });
 
   it("releases the claim and doesn't throw when sending fails", async () => {
     fetchMock.mockResolvedValue({ ok: false, status: 500, text: async () => "down" });
-    await expect(notifyAdminOfOrder("order-1")).resolves.toBeUndefined();
-    expect(mocks.updates.at(-1)).toEqual({ admin_notified_at: null });
+    await expect(sendOrderEmails("order-1")).resolves.toBeUndefined();
+    expect(mocks.updates).toContainEqual({ admin_notified_at: null });
+    expect(mocks.updates).toContainEqual({ customer_notified_at: null });
   });
 
-  it("releases the claim when the network fails", async () => {
-    fetchMock.mockRejectedValue(new Error("network"));
-    await expect(notifyAdminOfOrder("order-1")).resolves.toBeUndefined();
-    expect(mocks.updates.at(-1)).toEqual({ admin_notified_at: null });
+  it("still emails the customer when the admin email fails", async () => {
+    fetchMock.mockRejectedValueOnce(new Error("network"));
+    await sendOrderEmails("order-1");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(mocks.updates).toContainEqual({ admin_notified_at: null });
+    expect(mocks.updates).not.toContainEqual({ customer_notified_at: null });
   });
 
   it("doesn't throw when the database fails", async () => {
     mocks.claim.mockRejectedValue(new Error("database down"));
-    await expect(notifyAdminOfOrder("order-1")).resolves.toBeUndefined();
+    await expect(sendOrderEmails("order-1")).resolves.toBeUndefined();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

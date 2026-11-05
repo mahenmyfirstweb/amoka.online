@@ -1,4 +1,4 @@
-import type { OrderStatus } from "@/lib/validation";
+import type { OrderStatus, PaymentMethod } from "@/lib/validation";
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {
   pending: "Awaiting payment",
@@ -6,4 +6,9 @@ export const STATUS_LABELS: Record<OrderStatus, string> = {
   shipped: "Shipped",
   delivered: "Delivered",
   cancelled: "Cancelled",
+};
+
+export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+  online: "Pay online",
+  pay_later: "Pay later",
 };

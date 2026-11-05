@@ -14,11 +14,6 @@ export const cartItemsSchema = z
   .min(1, "Your cart is empty")
   .max(100);
 
-export const checkoutSchema = z.object({
-  addressId: z.uuid(),
-  items: cartItemsSchema,
-});
-
 export const addressSchema = z.object({
   label: optional(40),
   recipient_name: trimmed(100),
@@ -31,6 +26,22 @@ export const addressSchema = z.object({
   unit: optional(20),
   building: optional(100),
   postal_code: z.string().trim().regex(/^\d{6}$/, "Enter a 6-digit postal code"),
+});
+
+export const PAYMENT_METHODS = ["online", "pay_later"] as const;
+export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+/** What a guest types at checkout. Signed-in customers pick a saved address instead. */
+export const guestDetailsSchema = z.object({
+  email: z.string().trim().pipe(z.email("Enter a valid email address").max(254)),
+  address: addressSchema.omit({ label: true }),
+});
+
+export const checkoutSchema = z.object({
+  items: cartItemsSchema,
+  paymentMethod: z.enum(PAYMENT_METHODS),
+  addressId: z.uuid().optional(),
+  guest: guestDetailsSchema.optional(),
 });
 
 export const profileSchema = z.object({

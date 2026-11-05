@@ -17,13 +17,32 @@ function product(priceCents: number, stock: number, extra: { active?: boolean } 
   return createProduct(db, { name: `Product ${counter}`, slug: `product-${counter}`, priceCents, stock, ...extra });
 }
 
-async function placeOrder(userId: string, addressId: string, variantId: string, quantity = 1) {
-  const { rows } = await as<{ place_order: { order_id: string; total_cents: number; shipping_cents: number } }>(
+type Placed = { order_id: string; total_cents: number; shipping_cents: number; access_token: string };
+
+async function placeOrder(userId: string, addressId: string, variantId: string, quantity = 1, method = "online") {
+  const { rows } = await as<{ place_order: Placed }>(
     db,
     "service_role",
     null,
-    "select public.place_order($1, $2, $3, $4::jsonb)",
-    [userId, "x@example.com", addressId, items(variantId, quantity)],
+    "select public.place_order($1, $2, $3::jsonb, $4, $5)",
+    [userId, "x@example.com", items(variantId, quantity), method, addressId],
+  );
+  return rows[0].place_order;
+}
+
+const guestAddress = {
+  recipient_name: "Guest", phone: "91234567", street: "1 Serangoon Road",
+  unit: "#08-03", building: null, postal_code: "218227",
+};
+
+async function placeGuestOrder(variantId: string, opts: { quantity?: number; method?: string; email?: string; address?: object } = {}) {
+  const { rows } = await as<{ place_order: Placed }>(
+    db,
+    "service_role",
+    null,
+    "select public.place_order(null, $1, $2::jsonb, $3, null, $4::jsonb)",
+    [opts.email ?? "guest@example.com", items(variantId, opts.quantity ?? 1), opts.method ?? "online",
+      JSON.stringify(opts.address ?? guestAddress)],
   );
   return rows[0].place_order;
 }
@@ -140,8 +159,10 @@ describe("access control", () => {
 
   it("stops customers and guests running server-only functions", async () => {
     const { variantId } = await product(1000, 10);
-    await expect(as(db, "authenticated", alice, "select public.place_order($1, 'a', $2, $3::jsonb)",
-      [alice, aliceAddress, items(variantId)])).rejects.toThrow(/permission denied/);
+    await expect(as(db, "authenticated", alice, "select public.place_order($1, 'a@b.c', $2::jsonb, 'online', $3)",
+      [alice, items(variantId), aliceAddress])).rejects.toThrow(/permission denied/);
+    await expect(as(db, "anon", null, "select public.place_order(null, 'a@b.c', $1::jsonb, 'pay_later', null, $2::jsonb)",
+      [items(variantId), JSON.stringify(guestAddress)])).rejects.toThrow(/permission denied/);
     await expect(as(db, "authenticated", alice,
       "select public.mark_order_paid('s', 'p', 'card', 1, 'sgd')")).rejects.toThrow(/permission denied/);
     await expect(as(db, "anon", null,
@@ -247,9 +268,10 @@ describe("place_order", () => {
 
   it("adds up the same variant listed twice", async () => {
     const { variantId } = await product(1000, 3);
-    await expect(as(db, "service_role", null, "select public.place_order($1, 'a@b.c', $2, $3::jsonb)", [
-      alice, aliceAddress,
+    await expect(as(db, "service_role", null, "select public.place_order($1, 'a@b.c', $2::jsonb, 'online', $3)", [
+      alice,
       JSON.stringify([{ variant_id: variantId, quantity: 2 }, { variant_id: variantId, quantity: 2 }]),
+      aliceAddress,
     ])).rejects.toThrow(/INSUFFICIENT_STOCK/);
   });
 
@@ -257,7 +279,7 @@ describe("place_order", () => {
     const hidden = await product(1000, 5, { active: false });
     await expect(placeOrder(alice, aliceAddress, hidden.variantId)).rejects.toThrow(/ITEM_UNAVAILABLE/);
     await expect(placeOrder(alice, aliceAddress, "00000000-0000-0000-0000-000000000000")).rejects.toThrow(/ITEM_UNAVAILABLE/);
-    await expect(as(db, "service_role", null, "select public.place_order($1, 'a@b.c', $2, '[]'::jsonb)",
+    await expect(as(db, "service_role", null, "select public.place_order($1, 'a@b.c', '[]'::jsonb, 'online', $2)",
       [alice, aliceAddress])).rejects.toThrow(/EMPTY_CART/);
     const { variantId } = await product(1000, 5);
     await expect(placeOrder(alice, aliceAddress, variantId, -1)).rejects.toThrow(/INVALID_QUANTITY/);
@@ -276,6 +298,140 @@ describe("place_order", () => {
     await placeOrder(alice, aliceAddress, variantId, 1);
     expect((await order(first.order_id)).status).toBe("cancelled");
     expect(await stockOf(db, variantId)).toBe(4);
+  });
+
+  it("refuses an unknown payment method or a bad email", async () => {
+    const { variantId } = await product(1000, 5);
+    await expect(placeOrder(alice, aliceAddress, variantId, 1, "cash")).rejects.toThrow(/INVALID_PAYMENT_METHOD/);
+    await expect(placeGuestOrder(variantId, { email: "nope" })).rejects.toThrow(/INVALID_EMAIL/);
+  });
+});
+
+describe("guest checkout", () => {
+  it("creates an order with no account, snapshotting the typed address", async () => {
+    const { variantId } = await product(1000, 5);
+    const placed = await placeGuestOrder(variantId, { quantity: 2, email: " Guest@Example.com " });
+
+    const row = await order(placed.order_id);
+    expect(row.user_id).toBeNull();
+    expect(row.email).toBe("guest@example.com");
+    expect(row.payment_method).toBe("online");
+    expect(row.access_token).toBe(placed.access_token);
+    expect(row.shipping_address).toEqual(guestAddress);
+    expect(await stockOf(db, variantId)).toBe(3);
+  });
+
+  it("checks the typed address in the database too", async () => {
+    const { variantId } = await product(1000, 5);
+    for (const bad of [
+      { ...guestAddress, postal_code: "12345" },
+      { ...guestAddress, phone: "12345678" },
+      { ...guestAddress, recipient_name: "  " },
+      { ...guestAddress, street: undefined },
+    ]) {
+      await expect(placeGuestOrder(variantId, { address: bad })).rejects.toThrow(/INVALID_ADDRESS/);
+    }
+    expect(await stockOf(db, variantId)).toBe(5);
+  });
+
+  it("won't let a guest use someone's saved address", async () => {
+    const { variantId } = await product(1000, 5);
+    await expect(as(db, "service_role", null, "select public.place_order(null, 'g@example.com', $1::jsonb, 'online', $2)",
+      [items(variantId), aliceAddress])).rejects.toThrow(/ADDRESS_NOT_FOUND/);
+  });
+
+  it("keeps guest orders private from signed-in customers", async () => {
+    const { variantId } = await product(1000, 5);
+    const placed = await placeGuestOrder(variantId);
+    const { rows } = await as(db, "authenticated", alice, "select * from public.orders where id = $1", [placed.order_id]);
+    expect(rows).toEqual([]);
+    expect((await as(db, "anon", null, "select id from public.orders").catch((e: Error) => e))).toBeInstanceOf(Error);
+  });
+
+  it("gives every order its own access token", async () => {
+    const { variantId } = await product(1000, 5);
+    const a = await placeGuestOrder(variantId);
+    const b = await placeGuestOrder(variantId);
+    expect(a.access_token).toMatch(/^[0-9a-f-]{36}$/);
+    expect(a.access_token).not.toBe(b.access_token);
+  });
+});
+
+describe("pay later", () => {
+  it("reserves stock with no expiry, so it isn't released automatically", async () => {
+    const { variantId } = await product(1000, 5);
+    const placed = await placeGuestOrder(variantId, { quantity: 2, method: "pay_later", email: "later1@example.com" });
+
+    const row = await order(placed.order_id);
+    expect(row.status).toBe("pending");
+    expect(row.payment_method).toBe("pay_later");
+    expect(row.expires_at).toBeNull();
+    expect(await stockOf(db, variantId)).toBe(3);
+
+    await as(db, "service_role", null, "select public.release_expired_orders()");
+    expect((await order(placed.order_id)).status).toBe("pending");
+    expect(await stockOf(db, variantId)).toBe(3);
+  });
+
+  it("isn't cancelled when the same customer later starts an online checkout", async () => {
+    const { variantId } = await product(1000, 5);
+    const later = await placeOrder(bob, bobAddress, variantId, 1, "pay_later");
+    await placeOrder(bob, bobAddress, variantId, 1, "online");
+    expect((await order(later.order_id)).status).toBe("pending");
+    await db.query("update public.orders set status = 'cancelled' where id = $1", [later.order_id]);
+  });
+
+  it("removes the ordered items from a signed-in customer's saved cart", async () => {
+    const { variantId } = await product(1000, 5);
+    await as(db, "authenticated", bob, "select public.sync_cart($1::jsonb, true)", [items(variantId, 2)]);
+    const placed = await placeOrder(bob, bobAddress, variantId, 2, "pay_later");
+    const { rows } = await as(db, "authenticated", bob, "select * from public.cart_items where variant_id = $1", [variantId]);
+    expect(rows).toEqual([]);
+    await db.query("update public.orders set status = 'cancelled' where id = $1", [placed.order_id]);
+  });
+
+  it("limits open pay-later orders to three per email, whatever its case", async () => {
+    const { variantId } = await product(1000, 20);
+    const email = "limit@example.com";
+    const first = await placeGuestOrder(variantId, { method: "pay_later", email });
+    await placeGuestOrder(variantId, { method: "pay_later", email });
+    await placeGuestOrder(variantId, { method: "pay_later", email: "LIMIT@example.com" });
+    await expect(placeGuestOrder(variantId, { method: "pay_later", email })).rejects.toThrow(/TOO_MANY_OPEN_ORDERS/);
+
+    // Online payment is still allowed, and settling one order frees a slot.
+    await placeGuestOrder(variantId, { method: "online", email });
+    await as(db, "authenticated", admin, "update public.orders set status = 'paid' where id = $1", [first.order_id]);
+    await placeGuestOrder(variantId, { method: "pay_later", email });
+  });
+
+  it("lets an admin mark it paid, then ship it", async () => {
+    const { variantId } = await product(1000, 5);
+    const placed = await placeGuestOrder(variantId, { method: "pay_later", email: "later2@example.com" });
+    await as(db, "authenticated", admin, "update public.orders set status = 'paid' where id = $1", [placed.order_id]);
+    let row = await order(placed.order_id);
+    expect(row.status).toBe("paid");
+    expect(row.paid_at).not.toBeNull();
+    await as(db, "authenticated", admin, "update public.orders set status = 'shipped' where id = $1", [placed.order_id]);
+    row = await order(placed.order_id);
+    expect(row.status).toBe("shipped");
+    expect(await stockOf(db, variantId)).toBe(4);
+  });
+
+  it("returns the stock when an admin cancels it", async () => {
+    const { variantId } = await product(1000, 5);
+    const placed = await placeGuestOrder(variantId, { quantity: 3, method: "pay_later", email: "later3@example.com" });
+    expect(await stockOf(db, variantId)).toBe(2);
+    await as(db, "authenticated", admin, "update public.orders set status = 'cancelled' where id = $1", [placed.order_id]);
+    expect(await stockOf(db, variantId)).toBe(5);
+  });
+
+  it("can't be marked paid by the customer", async () => {
+    const { variantId } = await product(1000, 5);
+    const placed = await placeOrder(alice, aliceAddress, variantId, 1, "pay_later");
+    const { rows } = await as(db, "authenticated", alice,
+      "update public.orders set status = 'paid' where id = $1 returning id", [placed.order_id]);
+    expect(rows).toEqual([]);
+    expect((await order(placed.order_id)).status).toBe("pending");
   });
 });
 

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { site } from "@/config/site";
 import { ClearCart } from "@/components/store/clear-cart";
 import { OrderSummary } from "@/components/store/order-view";
-import { requireUser } from "@/lib/auth";
-import { notifyAdminOfOrder } from "@/lib/notify";
-import { getOrder } from "@/lib/orders";
+import { getUser } from "@/lib/auth";
+import { sendOrderEmails } from "@/lib/notify";
+import { getOrderForViewer } from "@/lib/orders";
 import { createStripe, recordPaidSession } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -13,11 +14,12 @@ export const metadata: Metadata = {
   title: "Order confirmation",
   description: "Your order confirmation.",
   robots: { index: false },
+  referrer: "no-referrer",
 };
 
 type Props = {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ session_id?: string }>;
+  searchParams: Promise<{ session_id?: string; token?: string }>;
 };
 
 // The webhook may not have arrived when the customer lands here, so ask Stripe directly.
@@ -35,32 +37,44 @@ async function confirmWithStripe(orderId: string, sessionId: string) {
 
 export default async function ConfirmationPage({ params, searchParams }: Props) {
   const { id } = await params;
-  const { session_id: sessionId } = await searchParams;
-  await requireUser(`/orders/${id}/confirmation`);
+  const { session_id: sessionId, token } = await searchParams;
 
-  let result = await getOrder(id);
-  if (!result) notFound();
+  let result = await getOrderForViewer(id, token);
+  if (!result) {
+    // Older links have no token: the order's owner can still see it after signing in.
+    if (!(await getUser())) redirect(`/login?next=${encodeURIComponent(`/orders/${id}/confirmation`)}`);
+    notFound();
+  }
 
-  if (result.order.status === "pending" && sessionId) {
+  if (result.order.status === "pending" && result.order.payment_method === "online" && sessionId) {
     await confirmWithStripe(id, sessionId);
-    result = await getOrder(id);
+    result = await getOrderForViewer(id, token);
     if (!result) notFound();
   }
 
   const { order, items } = result;
   const paid = order.status !== "pending" && order.status !== "cancelled";
+  const placedPayLater = order.payment_method === "pay_later" && order.status === "pending";
 
-  // A second chance if the webhook's email failed. Does nothing if it was already sent.
-  if (paid) await notifyAdminOfOrder(id);
+  // A second chance if the earlier emails failed. Does nothing if they were already sent.
+  if (paid || placedPayLater) await sendOrderEmails(id);
 
   return (
     <>
-      {paid && <ClearCart />}
+      {(paid || placedPayLater) && <ClearCart />}
       <div className="mb-6 rounded-xl bg-beige-tint p-5">
         {paid ? (
           <>
             <h1 className="text-2xl">Thank you for your order</h1>
-            <p className="mt-1">Order {order.order_number} is confirmed. Stripe will email your receipt to {order.email}.</p>
+            <p className="mt-1">Order {order.order_number} is confirmed. We&apos;ve emailed the details to {order.email}.</p>
+          </>
+        ) : placedPayLater ? (
+          <>
+            <h1 className="text-2xl">Thank you, your order is placed</h1>
+            <p className="mt-1">
+              Order {order.order_number} has been received and you haven&apos;t been charged. We&apos;ll contact you
+              at {order.email} or {order.shipping_address.phone} to arrange payment and delivery.
+            </p>
           </>
         ) : order.status === "pending" ? (
           <>
@@ -70,14 +84,21 @@ export default async function ConfirmationPage({ params, searchParams }: Props) 
         ) : (
           <>
             <h1 className="text-2xl">This order was cancelled</h1>
-            <p className="mt-1">Order {order.order_number} wasn&apos;t completed. If you were charged, please contact us.</p>
+            <p className="mt-1">Order {order.order_number} wasn&apos;t completed. If you were charged, please contact us at {site.email}.</p>
           </>
+        )}
+        {!order.user_id && (
+          <p className="mt-2 text-sm">Bookmark this page to check your order later. The link is also in your confirmation email.</p>
         )}
       </div>
       <OrderSummary order={order} items={items} />
       <div className="mt-6 flex flex-wrap gap-3">
         <Link href="/" className="btn btn-primary">Continue shopping</Link>
-        <Link href={`/account/orders/${order.id}`} className="btn btn-outline">View order</Link>
+        {order.user_id ? (
+          <Link href={`/account/orders/${order.id}`} className="btn btn-outline">View order</Link>
+        ) : (
+          <Link href="/signup" className="btn btn-outline">Create an account</Link>
+        )}
       </div>
     </>
   );

@@ -29,7 +29,20 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
         <h1 className="text-2xl">{order.order_number}</h1>
         <StatusBadge status={order.status} />
       </div>
-      <p className="mb-4 text-sm">{formatDate(order.created_at)}, {order.email}</p>
+      <p className="mb-4 text-sm">
+        {formatDate(order.created_at)}, {order.email} ({order.user_id ? "account" : "guest"}),{" "}
+        {order.shipping_address.phone}
+      </p>
+
+      {order.payment_method === "pay_later" && order.status === "pending" && (
+        <div role="note" className="mb-4 rounded-xl bg-yellow p-4 text-brown">
+          <p className="font-semibold">Pay later: not paid yet</p>
+          <p className="text-sm">
+            Contact the customer to arrange payment. When you&apos;ve received it, change the status to Paid.
+            Its stock stays reserved until then, or until you cancel it.
+          </p>
+        </div>
+      )}
 
       {order.needs_review && (
         <div role="alert" className="mb-4 rounded-xl bg-orange p-4 text-bark">
@@ -43,7 +56,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
       )}
 
       <section aria-label="Status" className="card mb-4 p-4">
-        <OrderStatusForm orderId={order.id} status={order.status} />
+        <OrderStatusForm orderId={order.id} status={order.status} paymentMethod={order.payment_method} />
       </section>
 
       <OrderSummary order={order} items={items} />

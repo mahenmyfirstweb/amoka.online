@@ -1,28 +1,32 @@
 import Link from "next/link";
-import { STATUS_LABELS, StatusBadge } from "@/components/store/order-view";
+import { PAYMENT_LABELS, STATUS_LABELS, StatusBadge } from "@/components/store/order-view";
 import { formatDate, formatPrice } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import type { Order } from "@/lib/types";
-import { ORDER_STATUSES, orderStatusSchema } from "@/lib/validation";
+import { ORDER_STATUSES, PAYMENT_METHODS, orderStatusSchema } from "@/lib/validation";
 
 export const metadata = { title: "Orders" };
 
-type Row = Pick<Order, "id" | "order_number" | "email" | "status" | "total_cents" | "needs_review" | "created_at">;
+type Row = Pick<
+  Order,
+  "id" | "order_number" | "user_id" | "email" | "status" | "payment_method" | "total_cents" | "needs_review" | "created_at"
+>;
 
 export default async function AdminOrdersPage({ searchParams }: {
-  searchParams: Promise<{ status?: string; review?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; payment?: string; review?: string; q?: string }>;
 }) {
-  const { status, review, q } = await searchParams;
+  const { status, payment, review, q } = await searchParams;
   const supabase = await createClient();
 
   let query = supabase
     .from("orders")
-    .select("id, order_number, email, status, total_cents, needs_review, created_at")
+    .select("id, order_number, user_id, email, status, payment_method, total_cents, needs_review, created_at")
     .order("created_at", { ascending: false })
     .limit(200);
 
   const statusFilter = orderStatusSchema.safeParse(status);
   if (statusFilter.success) query = query.eq("status", statusFilter.data);
+  if (payment === "online" || payment === "pay_later") query = query.eq("payment_method", payment);
   if (review === "1") query = query.eq("needs_review", true);
   if (q) query = query.ilike("order_number", `%${q.replace(/[%_,]/g, "")}%`);
 
@@ -39,6 +43,13 @@ export default async function AdminOrdersPage({ searchParams }: {
           <select id="status" name="status" defaultValue={status ?? ""} className="input w-48">
             <option value="">All</option>
             {ORDER_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="payment" className="mb-1 block text-sm">Payment</label>
+          <select id="payment" name="payment" defaultValue={payment ?? ""} className="input w-48">
+            <option value="">All</option>
+            {PAYMENT_METHODS.map((m) => <option key={m} value={m}>{PAYMENT_LABELS[m]}</option>)}
           </select>
         </div>
         <div>
@@ -62,9 +73,12 @@ export default async function AdminOrdersPage({ searchParams }: {
                 <span className="min-w-0">
                   <span className="block font-semibold">
                     {o.order_number}
+                    {o.payment_method === "pay_later" && <span className="badge ml-2">Pay later</span>}
                     {o.needs_review && <span className="badge ml-2">Review</span>}
                   </span>
-                  <span className="block truncate text-sm">{o.email}, {formatDate(o.created_at)}</span>
+                  <span className="block truncate text-sm">
+                    {o.email}{o.user_id ? "" : " (guest)"}, {formatDate(o.created_at)}
+                  </span>
                 </span>
                 <span className="flex items-center gap-3">
                   <StatusBadge status={o.status} />

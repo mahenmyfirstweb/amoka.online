@@ -14,7 +14,11 @@ const mocks = vi.hoisted(() => ({
   notify: vi.fn(),
 }));
 
-vi.mock("@/lib/notify", () => ({ notifyAdminOfOrder: mocks.notify }));
+vi.mock("@/lib/notify", () => ({
+  sendOrderEmails: mocks.notify,
+  orderLink: (o: { id: string; access_token: string }) =>
+    `http://localhost:3000/orders/${o.id}/confirmation?token=${o.access_token}`,
+}));
 
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({ rpc: mocks.rpc, from: mocks.from }),
@@ -187,10 +191,16 @@ describe("checkout", () => {
     method: "POST",
     body: JSON.stringify(body),
   });
-  const valid = { addressId: ADDRESS, items: [{ variant_id: VARIANT, quantity: 2 }] };
+  const valid = { addressId: ADDRESS, paymentMethod: "online", items: [{ variant_id: VARIANT, quantity: 2 }] };
+  const guest = {
+    email: "guest@example.com",
+    address: { recipient_name: "Guest", phone: "91234567", street: "1 Serangoon Road", unit: null, building: null, postal_code: "218227" },
+  };
+  const asGuest = { paymentMethod: "online", items: valid.items, guest };
   const placed = {
     order_id: "order-1",
     order_number: "AM-10001",
+    access_token: "tok-1",
     shipping_cents: 600,
     total_cents: 1600,
     lines: [{ product_name: "Toor Dhall", variant_label: "500g", unit_price_cents: 500, quantity: 2 }],
@@ -203,16 +213,70 @@ describe("checkout", () => {
     mocks.expireSession.mockResolvedValue({});
   });
 
-  it("requires sign-in", async () => {
+  it("lets guests check out with the details they typed", async () => {
+    tables();
     mocks.getUser.mockResolvedValue(null);
-    expect((await checkout(request(valid))).status).toBe(401);
+    const response = await checkout(request(asGuest));
+    expect(response.status).toBe(200);
+    expect(mocks.rpc).toHaveBeenCalledWith("place_order", expect.objectContaining({
+      p_user_id: null,
+      p_email: "guest@example.com",
+      p_address_id: null,
+      p_address: guest.address,
+      p_payment_method: "online",
+    }));
+    const session = mocks.createSession.mock.calls[0][0];
+    expect(session.customer_email).toBe("guest@example.com");
+    expect(session.success_url).toBe(
+      "http://localhost:3000/orders/order-1/confirmation?token=tok-1&session_id={CHECKOUT_SESSION_ID}");
+  });
+
+  it("asks guests for their details and signed-in customers for an address", async () => {
+    mocks.getUser.mockResolvedValue(null);
+    expect((await checkout(request(valid))).status).toBe(400);
+    mocks.getUser.mockResolvedValue({ id: "user-1", email: "a@example.com" });
+    expect((await checkout(request(asGuest))).status).toBe(400);
     expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("uses the account's email and saved address for signed-in customers", async () => {
+    tables();
+    await checkout(request({ ...valid, guest }));
+    expect(mocks.rpc).toHaveBeenCalledWith("place_order", expect.objectContaining({
+      p_user_id: "user-1",
+      p_email: "a@example.com",
+      p_address_id: ADDRESS,
+      p_address: null,
+    }));
   });
 
   it("rejects invalid input before touching the database", async () => {
     tables();
     expect((await checkout(request({ addressId: "x", items: [] }))).status).toBe(400);
+    expect((await checkout(request({ ...valid, paymentMethod: "cash" }))).status).toBe(400);
+    mocks.getUser.mockResolvedValue(null);
+    expect((await checkout(request({ ...asGuest, guest: { ...guest, email: "not-an-email" } }))).status).toBe(400);
+    expect((await checkout(request({ ...asGuest, guest: { ...guest, address: { ...guest.address, postal_code: "123" } } }))).status).toBe(400);
     expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
+  it("places a pay-later order without Stripe and emails it straight away", async () => {
+    tables();
+    mocks.getUser.mockResolvedValue(null);
+    const response = await checkout(request({ ...asGuest, paymentMethod: "pay_later" }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ url: "http://localhost:3000/orders/order-1/confirmation?token=tok-1" });
+    expect(mocks.rpc.mock.calls[0][1].p_payment_method).toBe("pay_later");
+    expect(mocks.createSession).not.toHaveBeenCalled();
+    expect(mocks.notify).toHaveBeenCalledWith("order-1");
+  });
+
+  it("explains when a customer has too many unpaid pay-later orders", async () => {
+    tables();
+    mocks.rpc.mockResolvedValue({ data: null, error: { message: "TOO_MANY_OPEN_ORDERS" } });
+    const response = await checkout(request({ ...valid, paymentMethod: "pay_later" }));
+    expect(response.status).toBe(409);
+    expect((await response.json()).error).toMatch(/unpaid pay-later orders/);
   });
 
   it("charges the server's prices and ignores any price the client sends", async () => {
@@ -236,6 +300,8 @@ describe("checkout", () => {
     expect(sum).toBe(placed.total_cents);
     expect(session.metadata.order_id).toBe("order-1");
     expect(calls.inserts).toEqual([{ order_id: "order-1", stripe_session_id: "cs_1", amount_cents: 1600 }]);
+    // Online orders are only emailed once Stripe confirms payment.
+    expect(mocks.notify).not.toHaveBeenCalled();
   });
 
   it("leaves out the shipping line when shipping is free", async () => {

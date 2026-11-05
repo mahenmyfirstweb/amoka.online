@@ -10,7 +10,7 @@ const POLICIES: Record<string, Policy> = {
     description: "How and when amoka.online delivers within Singapore.",
     sections: [
       ["Where we deliver", "We deliver to addresses in Singapore only."],
-      ["Delivery time", `Orders usually arrive within ${site.deliveryTime} after payment is confirmed.`],
+      ["Delivery time", `Orders usually arrive within ${site.deliveryTime} after payment is confirmed. For pay-later orders, we'll agree delivery with you when we arrange payment.`],
       ["Shipping charges", "Shipping charges are shown in your cart and at checkout before you pay. Orders above our free shipping amount ship free."],
       ["Failed deliveries", `Please check your address and phone number at checkout. If a delivery can't be completed, contact us at ${site.email} and we'll arrange the next step.`],
     ],
@@ -30,7 +30,7 @@ const POLICIES: Record<string, Policy> = {
     description: "How amoka.online collects and protects your personal data.",
     sections: [
       ["Who we are", `${site.legalName} (UEN ${site.uen}) runs ${site.name}. We handle personal data in line with Singapore's Personal Data Protection Act 2012 (PDPA).`],
-      ["What we collect", "Your name, email, phone number, delivery addresses and order history. Payments are handled by Stripe, so we never see or store your full card details."],
+      ["What we collect", "Your name, email, phone number, delivery addresses and order history, whether you order with an account or as a guest. Payments are handled by Stripe, so we never see or store your full card details."],
       ["Why we use it", "To process and deliver your orders, provide customer support, keep your account secure and meet our legal obligations."],
       ["Who we share it with", "Only the service providers needed to run the store: our payment provider, hosting and database providers, and delivery partners. We don't sell your data."],
       ["Your choices", `You can update your details in your account. To ask for access to, correction of or deletion of your data, or to withdraw consent, email ${site.email}.`],
@@ -44,7 +44,7 @@ const POLICIES: Record<string, Policy> = {
     sections: [
       ["About these terms", `These terms apply when you buy from ${site.name}, operated by ${site.legalName} (UEN ${site.uen}), ${site.address}.`],
       ["Prices", "All prices are in Singapore dollars. The price and any GST are confirmed at checkout before you pay."],
-      ["Orders", "Your order is accepted once payment is confirmed. If an item can't be supplied, we'll tell you and refund that item."],
+      ["Orders", "If you pay online, your order is accepted once payment is confirmed. If you choose to pay later, we'll contact you to arrange payment, and we may cancel the order if payment can't be arranged. You don't need an account to order. If an item can't be supplied, we'll tell you and refund that item."],
       ["Product information", "We work to keep product details accurate. Always check the pack for ingredients and allergens before eating."],
       ["Governing law", "These terms are governed by the laws of Singapore."],
       ["Contact", `Email ${site.email} or call ${site.phone} (${site.supportHours}).`],

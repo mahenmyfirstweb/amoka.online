@@ -61,7 +61,7 @@ Keep going: the store fills in once Supabase is connected.
 
 ### Run the SQL files
 
-The `supabase/` folder holds 7 files. Run them **in this exact order**, once each:
+The `supabase/` folder holds 8 files. Run them **in this exact order**, once each:
 
 | Order | File | What it does |
 |---|---|---|
@@ -72,6 +72,9 @@ The `supabase/` folder holds 7 files. Run them **in this exact order**, once eac
 | 5 | `05_storage.sql` | Storage for product photos |
 | 6 | `06_checkout_functions.sql` | Checkout, payment and stock logic |
 | 7 | `07_seed.sql` | Your 20 categories and default settings |
+| 8 | `08_guest_checkout_pay_later.sql` | Guest checkout and "pay later" orders |
+
+If you ran files 1 to 7 before file 8 existed, just run file 8 once. It's safe on a store that already has orders.
 
 For each file:
 
@@ -272,6 +275,12 @@ Then create the Stripe **test mode** webhook from step 3, put its `whsec_` secre
    - In admin, move an order to **Shipped**, then **Delivered**.
    - Cancel a paid order and check the stock returns.
 8. Sign in to a second account and confirm you can't see the first account's orders.
+9. Sign out, add products to your cart and go to checkout as a guest:
+   - The **Register Your Account & Enjoy More Rewards!** popup appears. Choose **Continue as Guest**.
+   - Fill in your details, choose **Place order & pay later** and click **Place order**.
+   - The confirmation page says **Thank you, your order is placed**.
+   - Your `ADMIN_ORDER_EMAIL` inbox gets a **New pay-later order** email, and the email you typed gets an order confirmation.
+   - **Admin > Orders** shows it with a **Pay later** label. Cancel it and check the stock returns.
 
 ### Before going live
 
@@ -322,13 +331,23 @@ Then create the Stripe **test mode** webhook from step 3, put its `whsec_` secre
 2. Open an order to see the items and address.
 3. After posting it, change the status to **Shipped**, then **Delivered** once it arrives.
 
+**Pay-later orders** are marked **Pay later** and show as **Awaiting payment**. The dashboard counts them. For each one:
+
+1. Contact the customer using the email and phone number on the order, and arrange payment.
+2. When you've received the money, change the status to **Paid**, then ship it as usual.
+3. If the customer doesn't pay, change it to **Cancelled**. This returns the stock.
+
+Their stock stays reserved until you do one of these, so don't leave them sitting. One email address can have at most 3 unpaid pay-later orders at a time.
+
+**Guest orders** say **(guest)** beside the email. Guests see their order through the link in their confirmation email. If a guest later creates an account, their earlier guest orders don't appear in it.
+
 Orders marked **Review** need your attention. For example, a customer may have paid after their order expired and the stock had gone. The order page says what happened.
 
 **Refunds:** do these in your Stripe dashboard. Cancelling an order returns the stock but does **not** refund the customer.
 
-**Order emails:** you get one email for each paid order, listing the items, totals and delivery address, with a link to the order. Replying goes to the customer. If an order needs review, the subject says so. Treat **Admin > Orders** as your full record, because an email can occasionally fail or land in spam.
+**Order emails:** you get one email for each order, listing the items, totals and delivery address, with a link to the order. Online orders are emailed once paid, and pay-later orders as soon as they're placed, with **pay-later** in the subject. Replying goes to the customer. If an order needs review, the subject says so. Treat **Admin > Orders** as your full record, because an email can occasionally fail or land in spam.
 
-Customers don't get an order email from the store. Stripe sends them a receipt if you turn on **Settings > Customer emails > Successful payments**.
+Customers also get a confirmation email with their order and a link to view it. Replies go to your store email. Resend only delivers to customers once `amoka.online` is verified there. Stripe can also send its own receipt for online payments if you turn on **Settings > Customer emails > Successful payments**.
 
 ---
 
@@ -340,6 +359,7 @@ Customers don't get an order email from the store. Stripe sends them a receipt i
 | Confirmation emails don't arrive | Custom SMTP isn't set up (step 2) |
 | No email for a paid order | Check spam, then `RESEND_API_KEY`, `EMAIL_FROM` and your verified domain in Resend. Vercel's logs show the reason. The order is safe in Admin > Orders |
 | Email link goes to the wrong page | Supabase Site URL or Redirect URLs are wrong |
+| "We couldn't place your order" at checkout | File `08_guest_checkout_pay_later.sql` hasn't been run in Supabase |
 | "We couldn't start the payment" | `STRIPE_SECRET_KEY` is wrong, or test and live keys are mixed |
 | Paid, but the order stays "Awaiting payment" | Webhook address or `STRIPE_WEBHOOK_SECRET` is wrong. Check Stripe's webhook page |
 | Admin page sends you to the home page | Your role isn't `admin` yet. Run the SQL in step 2, then sign in again |

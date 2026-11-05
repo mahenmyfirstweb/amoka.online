@@ -2,7 +2,8 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 import { isSupabaseConfigured, SUPABASE_KEY, SUPABASE_URL } from "@/lib/supabase/config";
 
-const PROTECTED_PATHS = ["/account", "/admin", "/checkout"];
+// Checkout is open to guests, so it isn't listed.
+const PROTECTED_PATHS = ["/account", "/admin"];
 
 // Keeps the login session fresh and sends signed-out visitors to the login page.
 // This is only a convenience: real authorisation happens in pages, actions and RLS.

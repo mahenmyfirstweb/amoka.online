@@ -1,10 +1,10 @@
 import { formatPrice } from "@/lib/format";
 import type { Order, OrderItem } from "@/lib/types";
-import { STATUS_LABELS } from "./order-labels";
+import { PAYMENT_LABELS, STATUS_LABELS } from "./order-labels";
 import { OrderTotals } from "./order-totals";
 import { ProductImage } from "./product-image";
 
-export { STATUS_LABELS };
+export { PAYMENT_LABELS, STATUS_LABELS };
 
 export function StatusBadge({ status }: { status: Order["status"] }) {
   const style = status === "cancelled" ? "bg-beige-tint text-bark" : status === "delivered" ? "bg-brown text-white" : "bg-yellow text-brown";
@@ -55,6 +55,7 @@ export function OrderSummary({ order, items }: { order: Order; items: OrderItem[
         </section>
         <section className="card p-4" aria-labelledby="payment-heading">
           <h2 id="payment-heading" className="mb-2 text-lg">Payment</h2>
+          <p className="mb-2 text-sm">Method: {PAYMENT_LABELS[order.payment_method] ?? PAYMENT_LABELS.online}</p>
           <OrderTotals
             subtotal={order.subtotal_cents}
             shipping={order.shipping_cents}

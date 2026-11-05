@@ -3,9 +3,13 @@
 import { useActionState } from "react";
 import { updateOrderStatus, type ActionState } from "@/app/admin/actions";
 import { STATUS_LABELS } from "@/components/store/order-labels";
-import { NEXT_STATUSES, type OrderStatus } from "@/lib/validation";
+import { NEXT_STATUSES, type OrderStatus, type PaymentMethod } from "@/lib/validation";
 
-export function OrderStatusForm({ orderId, status }: { orderId: string; status: OrderStatus }) {
+export function OrderStatusForm({ orderId, status, paymentMethod }: {
+  orderId: string;
+  status: OrderStatus;
+  paymentMethod: PaymentMethod;
+}) {
   const [state, action, pending] = useActionState<ActionState, FormData>(updateOrderStatus, {});
   const next = NEXT_STATUSES[status];
 
@@ -26,7 +30,11 @@ export function OrderStatusForm({ orderId, status }: { orderId: string; status: 
         <button type="submit" disabled={pending} className="btn btn-primary">{pending ? "Updating..." : "Update"}</button>
       </div>
       {next.includes("cancelled") && (
-        <p className="text-sm">Cancelling returns the stock. It doesn&apos;t refund the customer: do that in your Stripe dashboard.</p>
+        <p className="text-sm">
+          {paymentMethod === "pay_later" && status === "pending"
+            ? "Cancelling returns the stock."
+            : "Cancelling returns the stock. It doesn't refund the customer: refund online payments in your Stripe dashboard."}
+        </p>
       )}
     </form>
   );
