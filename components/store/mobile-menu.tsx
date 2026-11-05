@@ -7,7 +7,10 @@ import { Menu, X } from "lucide-react";
 import type { Category } from "@/lib/types";
 import { CategoryVisual } from "./category-visual";
 
-export function MobileMenu({ categories, signedIn }: { categories: Category[]; signedIn: boolean }) {
+export function MobileMenu({ categories, account }: {
+  categories: Category[];
+  account: { href: string; label: string };
+}) {
   const dialog = useRef<HTMLDialogElement>(null);
   const pathname = usePathname();
   const close = () => dialog.current?.close();
@@ -41,8 +44,8 @@ export function MobileMenu({ categories, signedIn }: { categories: Category[]; s
           </button>
         </div>
         <div className="p-4">
-          <Link href={signedIn ? "/account" : "/login"} onClick={close} className="btn btn-outline w-full">
-            {signedIn ? "My account" : "Sign in or register"}
+          <Link href={account.href} onClick={close} className="btn btn-outline w-full">
+            {account.label === "Sign in" ? "Sign in or register" : account.label}
           </Link>
           <h2 className="eyebrow mt-6 mb-3">Shop by category</h2>
           <ul className="grid grid-cols-3 gap-x-3 gap-y-4">

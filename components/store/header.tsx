@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Search, User } from "lucide-react";
-import { getUser } from "@/lib/auth";
+import { LayoutDashboard, Search, User } from "lucide-react";
+import { getIsAdmin, getUser } from "@/lib/auth";
 import { getCategories, getStoreSettings } from "@/lib/catalog";
 import { formatPrice } from "@/lib/format";
 import { CartLink } from "./cart-link";
@@ -17,8 +17,19 @@ export function Logo() {
 }
 
 export async function Header() {
-  const [categories, user, settings] = await Promise.all([getCategories(), getUser(), getStoreSettings()]);
+  const [categories, user, settings, isAdmin] = await Promise.all([
+    getCategories(),
+    getUser(),
+    getStoreSettings(),
+    getIsAdmin(),
+  ]);
   const freeFrom = settings?.free_shipping_threshold_cents;
+  // Admins go straight to the console; customers to their account.
+  const account = isAdmin
+    ? { href: "/admin", label: "Admin" }
+    : user
+      ? { href: "/account", label: "My account" }
+      : { href: "/login", label: "Sign in" };
 
   return (
     <>
@@ -33,7 +44,7 @@ export async function Header() {
 
       <header className="no-print sticky top-0 z-40 border-b border-beige bg-white">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 sm:gap-6">
-          <MobileMenu categories={categories} signedIn={Boolean(user)} />
+          <MobileMenu categories={categories} account={account} />
           <Logo />
 
           <form action="/search" role="search" className="ml-auto hidden flex-1 md:block md:max-w-lg">
@@ -56,12 +67,9 @@ export async function Header() {
             <Link href="/search" aria-label="Search" className="flex h-12 w-12 items-center justify-center md:hidden">
               <Search aria-hidden="true" size={22} />
             </Link>
-            <Link
-              href={user ? "/account" : "/login"}
-              className="hidden h-12 items-center gap-2 px-2 text-sm font-medium md:flex"
-            >
-              <User aria-hidden="true" size={22} />
-              {user ? "My account" : "Sign in"}
+            <Link href={account.href} className="hidden h-12 items-center gap-2 px-2 text-sm font-medium md:flex">
+              {isAdmin ? <LayoutDashboard aria-hidden="true" size={22} /> : <User aria-hidden="true" size={22} />}
+              {account.label}
             </Link>
             <CartLink />
           </div>
