@@ -94,7 +94,7 @@ export function HeroCarousel({ slides }: { slides: Slide[] }) {
       onMouseLeave={() => setHeld(false)}
       onFocus={() => setHeld(true)}
       onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setHeld(false); }}
-      className="relative -mx-4 -mt-6 overflow-hidden sm:mx-0 sm:mt-0 sm:rounded-3xl"
+      className="relative -mx-4 overflow-hidden sm:mx-0 sm:rounded-3xl"
     >
       <div className="grid">
         {slides.map((slide, i) => {

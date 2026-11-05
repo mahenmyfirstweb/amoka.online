@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, HandCoins, ShieldCheck, Truck } from "lucide-react";
+import { CategoryRail } from "@/components/store/category-rail";
 import { CategoryVisual } from "@/components/store/category-visual";
 import { HeroCarousel, type Slide, type SlideProduct } from "@/components/store/hero-carousel";
 import { bestSaving, ProductGrid } from "@/components/store/product-card";
@@ -136,23 +137,27 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-14">
-      <HeroCarousel slides={slides} />
+      <div className="space-y-5">
+        <section aria-label="Why shop with us">
+          <ul className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
+            {promises.map(({ icon: Icon, title, text }) => (
+              <li key={title} className="card flex items-center gap-2 p-2.5 sm:items-start sm:gap-3 sm:p-4">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-beige-tint sm:h-11 sm:w-11">
+                  <Icon aria-hidden="true" size={20} strokeWidth={1.75} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs leading-snug font-semibold text-bark sm:text-sm">{title}</span>
+                  <span className="hidden text-xs sm:block">{text}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-      <section aria-label="Why shop with us">
-        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {promises.map(({ icon: Icon, title, text }) => (
-            <li key={title} className="card flex flex-col items-start gap-2 p-4 sm:flex-row sm:gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-beige-tint">
-                <Icon aria-hidden="true" size={22} strokeWidth={1.75} />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold text-bark">{title}</span>
-                <span className="block text-xs">{text}</span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+        <HeroCarousel slides={slides} />
+
+        {categories.length > 0 && <CategoryRail categories={categories} inline />}
+      </div>
 
       {categories.length > 0 && (
         <section aria-labelledby="categories-heading" className="scroll-mt-28">
