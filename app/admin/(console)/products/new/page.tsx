@@ -10,8 +10,8 @@ export default async function NewProductPage() {
 
   return (
     <>
-      <h1 className="mb-1 text-2xl">Add product</h1>
-      <p className="mb-4 text-sm">You can add photos after saving.</p>
+      <h1 className="mb-1 text-3xl">Add product</h1>
+      <p className="mb-5 text-sm">Fill in the details, upload photos, set each size&apos;s price and stock, then click <strong>Save product</strong>.</p>
       <ProductForm
         categories={(data ?? []) as Category[]}
         initial={{

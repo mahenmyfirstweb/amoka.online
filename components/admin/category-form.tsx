@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { deleteCategory, saveCategory, type ActionState } from "@/app/admin/actions";
 import type { Category } from "@/lib/types";
+import { CategoryVisual } from "@/components/store/category-visual";
 import { ImageUpload } from "./image-upload";
 
 export function CategoryForm({ category, nextSort }: { category?: Category; nextSort?: number }) {
@@ -39,8 +40,24 @@ export function CategoryForm({ category, nextSort }: { category?: Category; next
           <input type="checkbox" name="is_active" defaultChecked={category?.is_active ?? true} className="h-5 w-5 accent-brown" />
           Show in the store
         </label>
-        <ImageUpload folder={`categories/${prefix}`} label="Category photo" onUploaded={setImagePath} />
-        {imagePath && <p className="text-sm">Photo ready. Save to apply it.</p>}
+        <div className="flex items-center gap-4">
+          <span className="block w-20 shrink-0">
+            <CategoryVisual category={{ slug: category?.slug ?? "", image_path: imagePath || null }} sizes="80px" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <ImageUpload
+              folder={`categories/${prefix}`}
+              label={imagePath ? "Replace the photo (JPG, PNG or WebP, up to 5 MB)" : "Category photo (JPG, PNG or WebP, up to 5 MB)"}
+              onUploaded={setImagePath}
+            />
+            {imagePath && (
+              <button type="button" onClick={() => setImagePath("")} className="mt-1 min-h-11 text-sm underline">
+                Remove photo
+              </button>
+            )}
+          </div>
+        </div>
+        {imagePath !== (category?.image_path ?? "") && <p className="text-sm font-medium">Photo changed. Click Save to apply it.</p>}
         <button type="submit" disabled={pending} className="btn btn-primary">{pending ? "Saving..." : "Save category"}</button>
       </form>
 

@@ -314,11 +314,17 @@ Then create the Stripe **test mode** webhook from step 3, put its `whsec_` secre
 ### Add a product
 
 1. Go to **Admin > Products > Add product**.
-2. Enter the name and choose a category.
-3. Add each size with its price and stock. Use **Add another size** for more. **Was price** is optional and shows a "% off" badge.
-4. Fill in the description, ingredients, allergens and country of origin.
-5. Click **Save product**.
-6. On the next page, add photos. Square photos on a plain background look best.
+2. Enter the name, then upload photos under **Photos**. The first one is the main photo. Square photos on a plain background look best.
+3. Choose a category.
+4. Add each size with its price and stock. Use **Add another size** for more. **Was price** is optional and shows a "Save X%" badge.
+5. Fill in the description, ingredients, allergens and country of origin.
+6. Click **Save product**. The next page lets you add or remove photos later.
+
+### Add a category
+
+1. Go to **Admin > Add category**, or **Categories > Add new category**.
+2. Enter the name and upload a photo, then click **Save category**.
+3. To change one later, open it from **Admin > Categories**.
 
 ### Manage your shop
 

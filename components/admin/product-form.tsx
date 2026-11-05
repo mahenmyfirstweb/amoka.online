@@ -1,9 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import { useActionState, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { saveProduct, type ActionState } from "@/app/admin/actions";
+import { createClient } from "@/lib/supabase/client";
+import { IMAGE_BUCKET, imageUrl } from "@/lib/supabase/config";
 import type { Category } from "@/lib/types";
+import { ImageUpload } from "./image-upload";
 
 type VariantRow = {
   key: string;
@@ -53,8 +57,50 @@ const VARIANT_FIELDS = [
   ["sku", "SKU", "Optional"],
 ] as const;
 
+/** Photos for a product that hasn't been saved yet. They're attached when it's saved. */
+function NewProductPhotos({ name, photos, setPhotos }: {
+  name: string;
+  photos: string[];
+  setPhotos: (update: (photos: string[]) => string[]) => void;
+}) {
+  return (
+    <fieldset className="card space-y-3 p-4">
+      <legend className="px-1 font-semibold">Photos</legend>
+      {photos.length > 0 && (
+        <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5">
+          {photos.map((path, index) => (
+            <li key={path} className="overflow-hidden rounded-lg border border-beige">
+              <div className="relative aspect-square bg-white">
+                <Image src={imageUrl(path) ?? ""} alt={`${name || "New product"} photo ${index + 1}`} fill sizes="160px" className="object-contain p-1" />
+                {index === 0 && <span className="badge absolute top-1 left-1">Main</span>}
+              </div>
+              <button
+                type="button"
+                aria-label={`Remove photo ${index + 1}`}
+                onClick={() => {
+                  setPhotos((current) => current.filter((p) => p !== path));
+                  void createClient().storage.from(IMAGE_BUCKET).remove([path]);
+                }}
+                className="w-full py-2.5 text-sm underline"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <ImageUpload
+        folder="products/new"
+        label="Upload a photo (JPG, PNG or WebP, up to 5 MB). Add as many as you like; the first is the main photo."
+        onUploaded={(path) => setPhotos((current) => [...current, path])}
+      />
+    </fieldset>
+  );
+}
+
 export function ProductForm({ initial, categories }: { initial: ProductFormValues; categories: Category[] }) {
   const [values, setValues] = useState(initial);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [state, action, pending] = useActionState<ActionState, FormData>(saveProduct, {});
 
   const set = <K extends keyof ProductFormValues>(key: K, value: ProductFormValues[K]) =>
@@ -73,6 +119,7 @@ export function ProductForm({ initial, categories }: { initial: ProductFormValue
     variants: values.variants.map((v) => ({
       id: v.id, label: v.label, price: v.price, mrp: v.mrp, stock: v.stock, sku: v.sku,
     })),
+    images: id ? [] : photos,
   });
 
   return (
@@ -87,6 +134,8 @@ export function ProductForm({ initial, categories }: { initial: ProductFormValue
         <label htmlFor="name" className="mb-1 block text-sm font-medium">Product name</label>
         <input id="name" required value={values.name} onChange={(e) => set("name", e.target.value)} className="input" />
       </div>
+
+      {!id && <NewProductPhotos name={values.name} photos={photos} setPhotos={setPhotos} />}
 
       <div>
         <label htmlFor="category" className="mb-1 block text-sm font-medium">Category</label>
@@ -158,6 +207,7 @@ export function ProductForm({ initial, categories }: { initial: ProductFormValue
         Feature on the home page
       </label>
 
+      {state.error && <p role="alert" className="rounded-lg bg-beige-tint p-3 text-sm font-medium text-bark">{state.error}</p>}
       <button type="submit" disabled={pending} className="btn btn-primary">{pending ? "Saving..." : "Save product"}</button>
     </form>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { IMAGE_BUCKET } from "@/lib/supabase/config";
@@ -16,6 +16,7 @@ export function ImageUpload({ folder, label, onUploaded }: {
   onUploaded: (path: string) => Promise<void> | void;
 }) {
   const router = useRouter();
+  const inputId = useId();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +30,7 @@ export function ImageUpload({ folder, label, onUploaded }: {
     if (file.size > MAX_BYTES) return setError("Images must be 5 MB or smaller.");
 
     setPending(true);
-    const extension = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+    const extension = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[file.type] ?? "jpg";
     const path = `${folder}/${crypto.randomUUID()}.${extension}`;
     const { error: uploadError } = await createClient().storage.from(IMAGE_BUCKET).upload(path, file);
 
@@ -45,9 +46,9 @@ export function ImageUpload({ folder, label, onUploaded }: {
 
   return (
     <div>
-      <label htmlFor={`upload-${folder}`} className="mb-1 block text-sm font-medium">{label}</label>
+      <label htmlFor={inputId} className="mb-1 block text-sm font-medium">{label}</label>
       <input
-        id={`upload-${folder}`}
+        id={inputId}
         type="file"
         accept={ALLOWED_TYPES.join(",")}
         disabled={pending}

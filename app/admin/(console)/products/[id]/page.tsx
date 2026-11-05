@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteProduct } from "@/app/admin/actions";
 import { ProductForm } from "@/components/admin/product-form";
@@ -9,8 +10,12 @@ export const metadata = { title: "Edit product" };
 
 const money = (cents: number | null) => (cents === null ? "" : (cents / 100).toFixed(2));
 
-export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditProductPage({ params, searchParams }: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ created?: string }>;
+}) {
   const { id } = await params;
+  const { created } = await searchParams;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
 
   const supabase = await createClient();
@@ -29,7 +34,14 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
 
   return (
     <>
-      <h1 className="mb-4 text-2xl">{product.name}</h1>
+      <Link href="/admin/products" className="text-sm underline underline-offset-2">Back to products</Link>
+      <h1 className="mt-2 mb-4 text-3xl">{product.name}</h1>
+      {created === "1" && (
+        <p role="status" className="mb-4 max-w-2xl rounded-lg bg-yellow p-3 text-sm font-medium text-brown">
+          Product created{product.is_active ? " and live in the shop" : ""}. You can add more photos or edit it below.{" "}
+          <Link href={`/p/${product.slug}`} className="underline">View in shop</Link>
+        </p>
+      )}
       <ProductImages productId={product.id} productName={product.name} images={images} />
       <ProductForm
         categories={(categories ?? []) as Category[]}

@@ -16,6 +16,10 @@ export type ActionState = { error?: string; saved?: boolean };
 
 const DUPLICATE_MESSAGE = "That web address (slug) or SKU is already in use.";
 
+const newPhotosSchema = z
+  .array(z.string().regex(/^products\/new\/[0-9a-f-]{36}\.(jpe?g|png|webp)$/))
+  .max(20);
+
 function refreshStore() {
   revalidatePath("/", "layout");
 }
@@ -32,6 +36,9 @@ export async function saveProduct(_: ActionState, form: FormData): Promise<Actio
   }
   const parsed = productSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0].message };
+  // Photos uploaded on the Add product page, before the product existed.
+  const photos = newPhotosSchema.safeParse((input as { images?: unknown }).images ?? []);
+  if (!photos.success) return { error: "One of the photos couldn't be used. Remove it and upload it again." };
 
   const { variants, ...product } = parsed.data;
   const row = { ...product, slug: product.slug || slugify(product.name) };
@@ -70,8 +77,15 @@ export async function saveProduct(_: ActionState, form: FormData): Promise<Actio
     if (error) return { error: error.code === "23505" ? DUPLICATE_MESSAGE : error.message };
   }
 
+  if (!id && photos.data.length > 0) {
+    const { error } = await supabase.from("product_images").insert(
+      photos.data.map((path, index) => ({ product_id: productId, storage_path: path, alt: row.name, sort_order: index })),
+    );
+    if (error) return { error: `The product was saved, but its photos weren't: ${error.message}` };
+  }
+
   refreshStore();
-  if (!id) redirect(`/admin/products/${productId}`);
+  if (!id) redirect(`/admin/products/${productId}?created=1`);
   return { saved: true };
 }
 
@@ -178,6 +192,7 @@ export async function saveCategory(_: ActionState, form: FormData): Promise<Acti
   if (error) return { error: error.code === "23505" ? "That web address (slug) is already in use." : error.message };
 
   refreshStore();
+  if (!id) redirect(`/admin/categories?created=${encodeURIComponent(row.name)}`);
   return { saved: true };
 }
 
