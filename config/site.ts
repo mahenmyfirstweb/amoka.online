@@ -1,7 +1,14 @@
+/** Accepts "amoka.online", "https://amoka.online/" and so on, and returns "https://amoka.online". */
+export function normalizeSiteUrl(value: string | undefined): string {
+  const url = (value ?? "").trim().replace(/\/+$/, "");
+  if (!url) return "http://localhost:3000";
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
+}
+
 // Every store detail lives here. Changes appear in the footer, policy pages and invoices.
 export const site = {
   name: "amoka.online",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  url: normalizeSiteUrl(process.env.NEXT_PUBLIC_SITE_URL),
   tagline: "Indian groceries delivered across Singapore",
   description:
     "Shop Indian groceries, spices, snacks, pickles and more online. Delivered across Singapore.",

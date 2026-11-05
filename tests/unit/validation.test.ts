@@ -1,4 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { normalizeSiteUrl } from "@/config/site";
+
+describe("site address", () => {
+  it("accepts the address with or without https:// and a trailing slash", () => {
+    expect(normalizeSiteUrl("amoka-online.vercel.app")).toBe("https://amoka-online.vercel.app");
+    expect(normalizeSiteUrl(" https://amoka.online/ ")).toBe("https://amoka.online");
+    expect(normalizeSiteUrl("http://localhost:3000")).toBe("http://localhost:3000");
+    expect(normalizeSiteUrl(undefined)).toBe("http://localhost:3000");
+    expect(normalizeSiteUrl("")).toBe("http://localhost:3000");
+  });
+});
 import { formatPrice, percentOff, safeRedirectPath, slugify } from "@/lib/format";
 import { addressSchema, cartItemsSchema, dollarsToCents, variantSchema } from "@/lib/validation";
 
