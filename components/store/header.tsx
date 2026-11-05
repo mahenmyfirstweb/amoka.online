@@ -5,13 +5,13 @@ import { getCategories, getStoreSettings } from "@/lib/catalog";
 import { formatPrice } from "@/lib/format";
 import { CartLink } from "./cart-link";
 import { CategoryRail } from "./category-rail";
+import { LogoImage } from "./logo";
 import { MobileMenu } from "./mobile-menu";
 
 export function Logo() {
   return (
-    <Link href="/" className="font-heading text-2xl font-bold tracking-tight text-brown">
-      amoka<span className="sr-only">.online home</span>
-      <span aria-hidden="true" className="font-semibold italic">.online</span>
+    <Link href="/" aria-label="amoka.online home" className="flex shrink-0 items-center">
+      <LogoImage height={64} priority className="h-12 w-auto sm:h-16" />
     </Link>
   );
 }
@@ -43,7 +43,7 @@ export async function Header() {
       </p>
 
       <header className="no-print sticky top-0 z-40 border-b border-beige bg-white">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 sm:gap-6">
+        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 sm:gap-6">
           <MobileMenu categories={categories} account={account} />
           <Logo />
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { site } from "@/config/site";
 import { getCategories } from "@/lib/catalog";
+import { LogoImage } from "./logo";
 
 const POLICY_LINKS = [
   { href: "/policies/shipping", label: "Shipping" },
@@ -17,7 +18,8 @@ export async function Footer() {
     <footer className="no-print mt-16 bg-bark text-beige-tint">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p className="font-heading text-2xl font-bold text-white">
+          <LogoImage height={72} className="h-[72px] w-auto" />
+          <p className="mt-2 font-heading text-xl font-bold text-white">
             amoka<span className="font-semibold italic">.online</span>
           </p>
           <p className="mt-3 text-sm">{site.tagline}. Delivered in {site.deliveryTime}.</p>

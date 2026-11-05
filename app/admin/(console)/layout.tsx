@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { SignOutButton } from "@/components/store/auth-forms";
+import { LogoImage } from "@/components/store/logo";
 import { requireAdmin } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -17,9 +18,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex flex-1 flex-col md:flex-row">
       <aside className="no-print bg-bark text-beige-tint md:sticky md:top-0 md:flex md:h-screen md:w-64 md:shrink-0 md:flex-col">
         <div className="flex items-center justify-between gap-3 px-5 py-4 md:block md:py-6">
-          <Link href="/admin" className="font-heading text-xl font-bold text-white">
-            amoka<span className="font-semibold italic">.online</span>
-            <span className="mt-0.5 block font-sans text-xs font-semibold tracking-[0.18em] text-yellow uppercase">Admin console</span>
+          <Link href="/admin" className="flex items-center gap-3 md:block">
+            <LogoImage height={56} className="h-12 w-auto md:h-14" />
+            <span className="block font-sans text-xs font-semibold tracking-[0.18em] text-yellow uppercase md:mt-2">Admin console</span>
           </Link>
         </div>
         <AdminNav />

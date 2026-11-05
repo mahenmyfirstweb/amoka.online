@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LockKeyhole } from "lucide-react";
 import { LoginForm, SignOutButton } from "@/components/store/auth-forms";
+import { LogoImage } from "@/components/store/logo";
 import { getIsAdmin, getUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
@@ -19,13 +20,10 @@ export default async function AdminLoginPage() {
     <main className="flex flex-1 items-center justify-center bg-bark px-4 py-12">
       <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-2xl">
         <div className="mb-6 text-center">
-          <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-beige-tint">
-            <LockKeyhole aria-hidden="true" size={26} />
-          </span>
-          <p className="mt-4 font-heading text-2xl font-bold">
-            amoka<span className="font-semibold italic">.online</span>
-          </p>
-          <h1 className="mt-1 font-sans text-sm font-semibold tracking-[0.18em] uppercase">Admin console</h1>
+          <LogoImage height={88} priority className="mx-auto h-[88px] w-auto" />
+          <h1 className="mt-3 flex items-center justify-center gap-2 font-sans text-sm font-semibold tracking-[0.18em] uppercase">
+            <LockKeyhole aria-hidden="true" size={16} /> Admin console
+          </h1>
         </div>
 
         {user ? (

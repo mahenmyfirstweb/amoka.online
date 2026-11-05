@@ -20,6 +20,9 @@ export const metadata: Metadata = {
     locale: "en_SG",
     url: "/",
   },
+  // The tab icon, home-screen icon and share image come from app/icon.png,
+  // app/apple-icon.png and app/opengraph-image.png.
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = { themeColor: "#fbc62f" };
