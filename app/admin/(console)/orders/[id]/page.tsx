@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { clearOrderReview } from "../../actions";
+import { clearOrderReview } from "@/app/admin/actions";
 import { OrderStatusForm } from "@/components/admin/order-status-form";
 import { OrderSummary, StatusBadge } from "@/components/store/order-view";
 import { formatDate } from "@/lib/format";

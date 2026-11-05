@@ -47,7 +47,7 @@ export default function CartPage() {
                   {line.variant_label && <p className="text-sm">{line.variant_label}</p>}
                   {!line.available && line.product_slug && (
                     <p role="alert" className="mt-1 text-sm font-semibold text-bark">
-                      {line.stock > 0 ? `Only ${line.stock} left. Please reduce the quantity.` : "Sold out. Please remove this item."}
+                      {line.stock > 0 ? `Only ${line.stock} left. Please reduce the quantity.` : "Out of stock. Please remove this item."}
                     </p>
                   )}
                   <div className="mt-2 flex items-center justify-between">

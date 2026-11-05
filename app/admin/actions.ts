@@ -7,7 +7,7 @@ import { requireAdmin } from "@/lib/auth";
 import { slugify } from "@/lib/format";
 import { IMAGE_BUCKET } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
-import { categorySchema, orderStatusSchema, productSchema, settingsSchema } from "@/lib/validation";
+import { categorySchema, dollars, orderStatusSchema, productSchema, settingsSchema } from "@/lib/validation";
 
 // Every action checks the admin role, then writes through the signed-in user's client,
 // so RLS and the order status rules apply as a second layer.
@@ -98,14 +98,35 @@ export async function deleteProduct(form: FormData) {
   redirect("/admin/products");
 }
 
-export async function updateStock(form: FormData) {
+const quickEditSchema = z.object({
+  id: z.uuid(),
+  price: dollars.refine((v) => v > 0, "Price must be above zero"),
+  stock: z.coerce.number().int("Stock must be a whole number").min(0, "Stock can't be negative").max(1_000_000),
+});
+
+/** Price and stock for one size, from the products list. "Out of stock" sets stock to 0. */
+export async function updateVariant(_: ActionState, form: FormData): Promise<ActionState> {
   await requireAdmin();
-  const stock = z.coerce.number().int().min(0).safeParse(form.get("stock"));
-  if (!stock.success) return;
+  const outOfStock = form.get("intent") === "out_of_stock";
+  const parsed = quickEditSchema.safeParse({
+    id: form.get("id"),
+    price: form.get("price"),
+    stock: outOfStock ? 0 : form.get("stock"),
+  });
+  if (!parsed.success) return { error: parsed.error.issues[0].message };
 
   const supabase = await createClient();
-  await supabase.from("product_variants").update({ stock: stock.data }).eq("id", String(form.get("id")));
+  const { error } = await supabase
+    .from("product_variants")
+    .update({ price_cents: parsed.data.price, stock: parsed.data.stock })
+    .eq("id", parsed.data.id);
+  if (error) {
+    return { error: error.message.includes("mrp") ? "The price can't be above the \"Was price\". Change it on the product page." : "We couldn't save that. Please try again." };
+  }
+
   refreshStore();
+  revalidatePath("/admin/products");
+  return { saved: true };
 }
 
 export async function addProductImage(productId: string, storagePath: string, alt: string) {

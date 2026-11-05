@@ -122,6 +122,8 @@ Check that **Authentication > Sign In / Providers > Email** is on, with **Confir
    ```
 4. Sign out and back in. **My account** now shows an **Admin** link, and <http://localhost:3000/admin> opens.
 
+The admin console has its own sign-in page at `/admin/login`, for example <https://amoka.online/admin/login>. Bookmark it. Customer accounts that try to open it are told they aren't an admin.
+
 ---
 
 ## 3. Set up Stripe
@@ -320,7 +322,9 @@ Then create the Stripe **test mode** webhook from step 3, put its `whsec_` secre
 
 ### Manage your shop
 
-- **Change stock:** Admin > Products, type the new number, click **Update**. Tick **Low stock** to see what's running out.
+- **Change a price or stock:** Admin > Products, type the new price or stock beside the size and click **Save**. Tick **Low stock** to see what's running out.
+- **Mark something out of stock:** click **Out of stock** beside the size. Its stock becomes 0, and the shop shows "Out of stock" under the product and stops it being added to carts. Type a new stock number and click **Save** when it's back.
+- **Run an offer:** open the product and set a **Was price** above the selling price. The product then shows "Save X%", appears under **Special offers** on the home page and in the home page slideshow.
 - **Hide a product:** open it and untick **Show in the store**.
 - **Delete a product:** open it and click **Delete product**. Products with past orders are archived instead, so your records stay correct.
 - **Feature on the home page:** tick **Feature on the home page**.

@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, HandCoins, ShieldCheck, Truck } from "lucide-react";
 import { CategoryVisual } from "@/components/store/category-visual";
-import { ProductGrid } from "@/components/store/product-card";
-import { ProductImage } from "@/components/store/product-image";
+import { HeroCarousel, type Slide, type SlideProduct } from "@/components/store/hero-carousel";
+import { bestSaving, ProductGrid } from "@/components/store/product-card";
 import { site } from "@/config/site";
 import { getCategories, getStoreSettings, listProducts } from "@/lib/catalog";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, percentOff } from "@/lib/format";
+import type { ProductCardData } from "@/lib/types";
 
 function SectionHeading({ id, eyebrow, title, link }: {
   id: string;
@@ -28,15 +29,89 @@ function SectionHeading({ id, eyebrow, title, link }: {
   );
 }
 
+/** Up to four products with photos, each shown at its best-value size. */
+function forSlide(products: ProductCardData[]): SlideProduct[] {
+  return products
+    .filter((p) => p.image_path)
+    .slice(0, 4)
+    .map((p) => {
+      const variant = [...p.variants].sort(
+        (a, b) => (percentOff(b.price_cents, b.mrp_cents) ?? 0) - (percentOff(a.price_cents, a.mrp_cents) ?? 0),
+      )[0];
+      return {
+        id: p.id,
+        slug: p.slug,
+        name: p.name,
+        image_path: p.image_path,
+        price_cents: variant.price_cents,
+        mrp_cents: variant.mrp_cents,
+      };
+    });
+}
+
 export default async function HomePage() {
-  const [categories, settings, featured] = await Promise.all([
+  const [categories, settings, featured, catalogue] = await Promise.all([
     getCategories(),
     getStoreSettings(),
     listProducts({ featured: true, limit: 8 }),
+    listProducts({ sort: "newest", limit: 100 }),
   ]);
-  const products = featured.products.length > 0 ? featured.products : (await listProducts({ limit: 8 })).products;
-  const showcase = products.filter((p) => p.image_path).slice(0, 4);
+  const all = catalogue.products;
+  const products = featured.products.length > 0 ? featured.products : all.slice(0, 8);
+  const newArrivals = all.slice(0, 8);
+  // Offers come from the "Was price" on each size, so they appear as soon as one is set in admin.
+  const offers = all
+    .filter((p) => bestSaving(p))
+    .sort((a, b) => (bestSaving(b) ?? 0) - (bestSaving(a) ?? 0))
+    .slice(0, 8);
+  const bestOffer = offers.length > 0 ? bestSaving(offers[0]) : null;
   const freeFrom = settings?.free_shipping_threshold_cents;
+
+  const slides: Slide[] = [
+    {
+      id: "welcome",
+      tone: "bark",
+      eyebrow: "Authentic Indian pantry · Singapore",
+      title: "The taste of home, delivered to your door",
+      text: "Hand-picked spices, snacks, pickles, dhall and pantry essentials, packed with care.",
+      cta: { href: "/search", label: "Shop now" },
+      secondary: { href: "#categories-heading", label: "Browse categories" },
+      products: forSlide(products),
+    },
+    ...(offers.length > 0
+      ? [{
+          id: "offers",
+          tone: "brown" as const,
+          eyebrow: "Special offers",
+          title: `Save up to ${bestOffer}% on pantry favourites`,
+          text: "Limited-time prices on selected products, while stocks last.",
+          cta: { href: "#offers-heading", label: "Shop the offers" },
+          products: forSlide(offers),
+        }]
+      : []),
+    ...(newArrivals.length > 0
+      ? [{
+          id: "new",
+          tone: "gold" as const,
+          eyebrow: "Just landed",
+          title: "New arrivals on our shelves",
+          text: "Discover the latest additions to the amoka.online pantry.",
+          cta: { href: "#new-heading", label: "See what's new" },
+          products: forSlide(newArrivals),
+        }]
+      : []),
+    ...(freeFrom
+      ? [{
+          id: "delivery",
+          tone: "bark" as const,
+          eyebrow: "Delivery offer",
+          title: `Free delivery on orders over ${formatPrice(freeFrom)}`,
+          text: `Delivered across Singapore in ${site.deliveryTime}. Pay online, or place your order and pay later.`,
+          cta: { href: "/search", label: "Start shopping" },
+          products: [],
+        }]
+      : []),
+  ];
 
   const promises = [
     { icon: Truck, title: "Delivered across Singapore", text: `In ${site.deliveryTime}` },
@@ -47,41 +122,7 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-14">
-      <section className="relative -mx-4 -mt-6 overflow-hidden bg-bark px-6 py-12 sm:mx-0 sm:mt-0 sm:rounded-3xl sm:px-12 sm:py-16">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-32 -right-24 h-96 w-96 rounded-full bg-brown opacity-60 blur-3xl"
-        />
-        <div className="relative grid items-center gap-10 lg:grid-cols-2">
-          <div>
-            <span className="eyebrow text-yellow">Authentic Indian pantry · Singapore</span>
-            <h1 className="mt-4 max-w-xl text-4xl leading-tight font-bold text-white sm:text-5xl">
-              The taste of home, delivered to your door
-            </h1>
-            <p className="mt-4 max-w-md text-lg text-beige-tint">
-              Hand-picked spices, snacks, pickles, dhall and pantry essentials, packed with care.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/search" className="btn btn-primary px-7">Shop now</Link>
-              <Link href="#categories-heading" className="btn border border-beige-tint px-7 text-white hover:bg-white/10">
-                Browse categories
-              </Link>
-            </div>
-          </div>
-
-          {showcase.length === 4 && (
-            <ul aria-label="Popular products" className="hidden grid-cols-2 gap-4 lg:grid">
-              {showcase.map((p, i) => (
-                <li key={p.id} className={i % 2 === 1 ? "translate-y-6" : ""}>
-                  <Link href={`/p/${p.slug}`} className="block overflow-hidden rounded-2xl bg-white p-2 shadow-xl transition hover:-translate-y-1">
-                    <ProductImage path={p.image_path} alt={p.name} sizes="240px" priority={i < 2} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
+      <HeroCarousel slides={slides} />
 
       <section aria-label="Why shop with us">
         <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -114,6 +155,25 @@ export default async function HomePage() {
               </li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {offers.length > 0 && (
+        <section aria-labelledby="offers-heading" className="scroll-mt-28 rounded-3xl bg-beige-tint p-4 sm:p-8">
+          <SectionHeading id="offers-heading" eyebrow="Limited time" title="Special offers" />
+          <ProductGrid products={offers} />
+        </section>
+      )}
+
+      {newArrivals.length > 0 && (
+        <section aria-labelledby="new-heading" className="scroll-mt-28">
+          <SectionHeading
+            id="new-heading"
+            eyebrow="Just landed"
+            title="New arrivals"
+            link={{ href: "/search?sort=newest", label: "View all" }}
+          />
+          <ProductGrid products={newArrivals.slice(0, 4)} label="New" />
         </section>
       )}
 

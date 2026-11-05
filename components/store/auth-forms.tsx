@@ -49,7 +49,7 @@ function useSubmit(action: (form: FormData) => Promise<void>) {
   return { pending, error, onSubmit };
 }
 
-export function LoginForm({ next }: { next: string }) {
+export function LoginForm({ next, admin = false }: { next: string; admin?: boolean }) {
   const router = useRouter();
   const { pending, error, onSubmit } = useSubmit(async (form) => {
     const { error: authError } = await createClient().auth.signInWithPassword({
@@ -71,7 +71,9 @@ export function LoginForm({ next }: { next: string }) {
       </button>
       <p className="flex justify-between text-sm">
         <Link href="/forgot-password" className="underline underline-offset-2">Forgot password?</Link>
-        <Link href={`/signup?next=${encodeURIComponent(next)}`} className="underline underline-offset-2">Create an account</Link>
+        {!admin && (
+          <Link href={`/signup?next=${encodeURIComponent(next)}`} className="underline underline-offset-2">Create an account</Link>
+        )}
       </p>
     </form>
   );

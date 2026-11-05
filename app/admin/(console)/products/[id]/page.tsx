@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { deleteProduct } from "../../actions";
+import { deleteProduct } from "@/app/admin/actions";
 import { ProductForm } from "@/components/admin/product-form";
 import { ProductImages } from "@/components/admin/product-images";
 import { createClient } from "@/lib/supabase/server";

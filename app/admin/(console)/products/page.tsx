@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { updateStock } from "../actions";
+import { PackagePlus } from "lucide-react";
+import { VariantQuickEdit } from "@/components/admin/variant-quick-edit";
+import { ProductImage } from "@/components/store/product-image";
 import { getStoreSettings } from "@/lib/catalog";
-import { formatPrice } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Products" };
@@ -12,7 +13,8 @@ type Row = {
   is_active: boolean;
   archived_at: string | null;
   categories: { name: string } | null;
-  product_variants: { id: string; label: string; price_cents: number; stock: number }[];
+  product_variants: { id: string; label: string; price_cents: number; stock: number; sort_order: number }[];
+  product_images: { storage_path: string; sort_order: number }[];
 };
 
 export default async function AdminProductsPage({ searchParams }: {
@@ -25,7 +27,9 @@ export default async function AdminProductsPage({ searchParams }: {
 
   let query = supabase
     .from("products")
-    .select("id, name, is_active, archived_at, categories (name), product_variants (id, label, price_cents, stock)")
+    .select("id, name, is_active, archived_at, categories (name), product_variants (id, label, price_cents, stock, sort_order), product_images (storage_path, sort_order)")
+    .order("sort_order", { referencedTable: "product_variants" })
+    .order("sort_order", { referencedTable: "product_images" })
     .order("name")
     .limit(500);
   query = archived === "1" ? query.not("archived_at", "is", null) : query.is("archived_at", null);
@@ -37,10 +41,14 @@ export default async function AdminProductsPage({ searchParams }: {
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl">Products</h1>
-        <Link href="/admin/products/new" className="btn btn-primary">Add product</Link>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl">Products</h1>
+        <Link href="/admin/products/new" className="btn btn-primary"><PackagePlus aria-hidden="true" size={18} /> Add new product</Link>
       </div>
+      <p className="mb-5 text-sm">
+        Change a price or stock and click <strong>Save</strong>. <strong>Out of stock</strong> sets stock to 0, and the
+        shop then shows the size as out of stock. Open a product to edit its details or upload photos.
+      </p>
 
       <form className="mb-4 flex flex-wrap items-center gap-2">
         <label htmlFor="q" className="sr-only">Search products</label>
@@ -63,7 +71,12 @@ export default async function AdminProductsPage({ searchParams }: {
           {products.map((p) => (
             <li key={p.id} className="card p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <Link href={`/admin/products/${p.id}`} className="font-semibold underline underline-offset-2">{p.name}</Link>
+                <Link href={`/admin/products/${p.id}`} className="flex items-center gap-3 font-semibold underline underline-offset-2">
+                  <span className="block w-12 shrink-0 overflow-hidden rounded-lg border border-beige">
+                    <ProductImage path={p.product_images[0]?.storage_path} alt="" sizes="48px" />
+                  </span>
+                  {p.name}
+                </Link>
                 <span className="text-sm">
                   {p.categories?.name}
                   {!p.is_active && !p.archived_at && <span className="badge ml-2">Hidden</span>}
@@ -72,17 +85,8 @@ export default async function AdminProductsPage({ searchParams }: {
               </div>
               <ul className="mt-2 divide-y divide-beige">
                 {p.product_variants.map((v) => (
-                  <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-1.5 text-sm">
-                    <span>
-                      {v.label}, {formatPrice(v.price_cents)}
-                      {v.stock <= threshold && <span className="badge ml-2">{v.stock === 0 ? "Sold out" : "Low"}</span>}
-                    </span>
-                    <form action={updateStock} className="flex items-center gap-2">
-                      <input type="hidden" name="id" value={v.id} />
-                      <label htmlFor={`stock-${v.id}`} className="sr-only">Stock of {p.name} {v.label}</label>
-                      <input id={`stock-${v.id}`} name="stock" type="number" min={0} defaultValue={v.stock} className="input w-24" />
-                      <button type="submit" className="btn btn-outline">Update</button>
-                    </form>
+                  <li key={v.id}>
+                    <VariantQuickEdit productName={p.name} variant={v} threshold={threshold} />
                   </li>
                 ))}
               </ul>

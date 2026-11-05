@@ -24,9 +24,10 @@ export async function requireUser(next: string) {
   return user;
 }
 
-/** Call at the top of every admin page and server action. */
+/** Call at the top of every admin page and server action. Sends others to the admin sign-in. */
 export async function requireAdmin() {
-  const user = await requireUser("/admin");
-  if (!(await getIsAdmin())) redirect("/");
+  const user = await getUser();
+  if (!user) redirect("/admin/login");
+  if (!(await getIsAdmin())) redirect("/admin/login?denied=1");
   return user;
 }
