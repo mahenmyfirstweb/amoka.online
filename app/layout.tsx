@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Sans_Tamil, Poppins } from "next/font/google";
+import { Inter, Noto_Sans_Tamil, Playfair_Display } from "next/font/google";
 import { CartProvider } from "@/components/store/cart-context";
 import { site } from "@/config/site";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const poppins = Poppins({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-poppins" });
+const display = Playfair_Display({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-display" });
 const tamil = Noto_Sans_Tamil({ subsets: ["tamil"], variable: "--font-tamil", preload: false });
 
 export const metadata: Metadata = {
@@ -30,7 +30,7 @@ export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-SG" className={`${inter.variable} ${poppins.variable} ${tamil.variable} h-full antialiased`}>
+    <html lang="en-SG" className={`${inter.variable} ${display.variable} ${tamil.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <CartProvider>{children}</CartProvider>
       </body>

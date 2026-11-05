@@ -1,60 +1,74 @@
 import Link from "next/link";
 import { Search, User } from "lucide-react";
 import { getUser } from "@/lib/auth";
-import { getCategories } from "@/lib/catalog";
+import { getCategories, getStoreSettings } from "@/lib/catalog";
+import { formatPrice } from "@/lib/format";
 import { CartLink } from "./cart-link";
+import { CategoryRail } from "./category-rail";
 import { MobileMenu } from "./mobile-menu";
 
+export function Logo() {
+  return (
+    <Link href="/" className="font-heading text-2xl font-bold tracking-tight text-brown">
+      amoka<span className="sr-only">.online home</span>
+      <span aria-hidden="true" className="font-semibold italic">.online</span>
+    </Link>
+  );
+}
+
 export async function Header() {
-  const [categories, user] = await Promise.all([getCategories(), getUser()]);
+  const [categories, user, settings] = await Promise.all([getCategories(), getUser(), getStoreSettings()]);
+  const freeFrom = settings?.free_shipping_threshold_cents;
 
   return (
-    <header className="no-print sticky top-0 z-40 border-b border-beige bg-white">
-      <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 sm:gap-4">
-        <MobileMenu categories={categories} signedIn={Boolean(user)} />
-        <Link href="/" className="font-heading text-xl font-bold text-brown">
-          amoka<span className="sr-only">.online home</span>
-          <span aria-hidden="true">.online</span>
-        </Link>
+    <>
+      <p className="no-print bg-bark px-4 py-2 text-center text-xs tracking-wide text-beige-tint sm:text-sm">
+        {freeFrom ? (
+          <>Free delivery across Singapore on orders over <span className="font-semibold text-yellow">{formatPrice(freeFrom)}</span></>
+        ) : (
+          "Delivered across Singapore"
+        )}
+        <span className="hidden sm:inline"> · Pay online or pay later</span>
+      </p>
 
-        <form action="/search" role="search" className="ml-auto hidden flex-1 md:block md:max-w-md">
-          <label htmlFor="search-desktop" className="sr-only">Search products</label>
-          <div className="relative">
-            <input id="search-desktop" name="q" type="search" placeholder="Search products" className="input pr-11" />
-            <button type="submit" aria-label="Search" className="absolute inset-y-0 right-0 flex w-11 items-center justify-center">
-              <Search aria-hidden="true" size={20} />
-            </button>
+      <header className="no-print sticky top-0 z-40 border-b border-beige bg-white">
+        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3 sm:gap-6">
+          <MobileMenu categories={categories} signedIn={Boolean(user)} />
+          <Logo />
+
+          <form action="/search" role="search" className="ml-auto hidden flex-1 md:block md:max-w-lg">
+            <label htmlFor="search-desktop" className="sr-only">Search products</label>
+            <div className="relative">
+              <input
+                id="search-desktop"
+                name="q"
+                type="search"
+                placeholder="Search spices, snacks, pickles..."
+                className="input rounded-full bg-paper pl-5 pr-12"
+              />
+              <button type="submit" aria-label="Search" className="absolute inset-y-0 right-1 flex w-11 items-center justify-center">
+                <Search aria-hidden="true" size={20} />
+              </button>
+            </div>
+          </form>
+
+          <div className="ml-auto flex items-center md:ml-0">
+            <Link href="/search" aria-label="Search" className="flex h-12 w-12 items-center justify-center md:hidden">
+              <Search aria-hidden="true" size={22} />
+            </Link>
+            <Link
+              href={user ? "/account" : "/login"}
+              className="hidden h-12 items-center gap-2 px-2 text-sm font-medium md:flex"
+            >
+              <User aria-hidden="true" size={22} />
+              {user ? "My account" : "Sign in"}
+            </Link>
+            <CartLink />
           </div>
-        </form>
-
-        <div className="ml-auto flex items-center md:ml-0">
-          <Link href="/search" aria-label="Search" className="flex h-12 w-12 items-center justify-center md:hidden">
-            <Search aria-hidden="true" size={22} />
-          </Link>
-          <Link
-            href={user ? "/account" : "/login"}
-            aria-label={user ? "My account" : "Sign in"}
-            className="hidden h-12 w-12 items-center justify-center md:flex"
-          >
-            <User aria-hidden="true" size={22} />
-          </Link>
-          <CartLink />
         </div>
-      </div>
+      </header>
 
-      {categories.length > 0 && (
-        <nav aria-label="Categories" className="hidden border-t border-beige md:block">
-          <ul className="mx-auto flex max-w-6xl gap-5 overflow-x-auto px-4 py-2 text-sm whitespace-nowrap">
-            {categories.map((c) => (
-              <li key={c.id}>
-                <Link href={`/c/${c.slug}`} className="inline-block py-1 hover:underline">
-                  {c.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      )}
-    </header>
+      {categories.length > 0 && <CategoryRail categories={categories} />}
+    </>
   );
 }

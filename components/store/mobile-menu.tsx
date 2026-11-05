@@ -1,55 +1,62 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import type { Category } from "@/lib/types";
+import { CategoryVisual } from "./category-visual";
 
 export function MobileMenu({ categories, signedIn }: { categories: Category[]; signedIn: boolean }) {
-  const [open, setOpen] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
   const pathname = usePathname();
+  const close = () => dialog.current?.close();
 
+  // Close the menu after navigating to a new page.
   useEffect(() => {
-    // Close the menu after navigating to a new page.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setOpen(false);
+    dialog.current?.close();
   }, [pathname]);
 
   return (
     <div className="md:hidden">
       <button
         type="button"
-        aria-label={open ? "Close menu" : "Open menu"}
-        aria-expanded={open}
-        aria-controls="mobile-menu"
-        onClick={() => setOpen(!open)}
+        aria-label="Open menu"
+        aria-haspopup="dialog"
+        onClick={() => dialog.current?.showModal()}
         className="-ml-2 flex h-12 w-12 items-center justify-center"
       >
-        {open ? <X aria-hidden="true" size={24} /> : <Menu aria-hidden="true" size={24} />}
+        <Menu aria-hidden="true" size={24} />
       </button>
 
-      {open && (
-        <nav
-          id="mobile-menu"
-          aria-label="Main menu"
-          className="fixed inset-x-0 top-[65px] bottom-0 z-50 overflow-y-auto bg-white px-4 py-3"
-        >
-          <Link href={signedIn ? "/account" : "/login"} className="block py-3 font-semibold">
-            {signedIn ? "My account" : "Sign in"}
+      <dialog
+        ref={dialog}
+        aria-label="Menu"
+        className="m-0 h-full max-h-none w-[min(100%,24rem)] max-w-none bg-white p-0 text-brown backdrop:bg-bark/60"
+      >
+        <div className="flex items-center justify-between border-b border-beige px-4 py-2">
+          <p className="font-heading text-xl font-semibold">Menu</p>
+          <button type="button" aria-label="Close menu" onClick={close} className="-mr-2 flex h-12 w-12 items-center justify-center">
+            <X aria-hidden="true" size={24} />
+          </button>
+        </div>
+        <div className="p-4">
+          <Link href={signedIn ? "/account" : "/login"} onClick={close} className="btn btn-outline w-full">
+            {signedIn ? "My account" : "Sign in or register"}
           </Link>
-          <h2 className="mt-3 mb-1 text-sm">Categories</h2>
-          <ul>
+          <h2 className="eyebrow mt-6 mb-3">Shop by category</h2>
+          <ul className="grid grid-cols-3 gap-x-3 gap-y-4">
             {categories.map((c) => (
-              <li key={c.id} className="border-t border-beige">
-                <Link href={`/c/${c.slug}`} className="block py-3">
-                  {c.name}
+              <li key={c.id}>
+                <Link href={`/c/${c.slug}`} onClick={close} className="group flex flex-col items-center gap-1.5 text-center">
+                  <span className="block w-16"><CategoryVisual category={c} sizes="64px" /></span>
+                  <span className="text-xs leading-tight font-medium">{c.name}</span>
                 </Link>
               </li>
             ))}
           </ul>
-        </nav>
-      )}
+        </div>
+      </dialog>
     </div>
   );
 }
